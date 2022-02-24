@@ -248,54 +248,88 @@ struct big_int
     constexpr big_int& operator*=(const big_int& other) noexcept;
     constexpr big_int& operator/=(const big_int& other) noexcept;
     constexpr big_int& operator%=(const big_int& other) noexcept;
-    constexpr big_int& operator&=(const big_int& other) noexcept;
-    constexpr big_int& operator|=(const big_int& other) noexcept;
-    constexpr big_int& operator^=(const big_int& other) noexcept;
+    constexpr big_int& operator&=(const big_int& other) noexcept
+    {
+        for (size_t i = 0; i < size; ++i)
+        {
+            raw[i] &= other.raw[i];
+        }
+        return *this;
+    }
+
+    constexpr big_int& operator|=(const big_int& other) noexcept
+    {
+        for (size_t i = 0; i < size; ++i)
+        {
+            raw[i] |= other.raw[i];
+        }
+        return *this;
+    }
+
+    constexpr big_int& operator^=(const big_int& other) noexcept
+    {
+        for (size_t i = 0; i < size; ++i)
+        {
+            raw[i] ^= other.raw[i];
+        }
+        return *this;
+    }
+
     constexpr big_int& operator<<=(const big_int& other) noexcept;
     constexpr big_int& operator>>=(const big_int& other) noexcept;
 
     // Non-modifying operators
     constexpr big_int operator+() const noexcept { return *this; }
-    constexpr big_int operator-() const noexcept
+    [[nodiscard]] constexpr big_int operator-() const noexcept
     {
         big_int cpy = *this;
         cpy.negate();
         return cpy;
     }
 
-    constexpr big_int log(const big_int& base) const noexcept;
+    [[nodiscard]] constexpr big_int log(const big_int& base) const noexcept;
 
-    constexpr big_int operator+(const big_int& other) const noexcept
+    [[nodiscard]] constexpr big_int operator+(
+        const big_int& other) const noexcept
     {
         big_int res = *this;
         res += other;
         return res;
     }
 
-    constexpr big_int operator-(const big_int& other) const noexcept
+    [[nodiscard]] constexpr big_int operator-(
+        const big_int& other) const noexcept
     {
         big_int res = *this;
         res -= other;
         return res;
     }
 
-    constexpr big_int operator*(const big_int& other) const noexcept;
-    constexpr big_int operator/(const big_int& other) const noexcept;
-    constexpr big_int operator%(const big_int& other) const noexcept;
+    [[nodiscard]] constexpr big_int operator*(
+        const big_int& other) const noexcept;
+    [[nodiscard]] constexpr big_int operator/(
+        const big_int& other) const noexcept;
+    [[nodiscard]] constexpr big_int operator%(
+        const big_int& other) const noexcept;
 
-    constexpr bool operator!() const noexcept { return !bool(*this); }
+    [[nodiscard]] constexpr bool operator!() const noexcept
+    {
+        return !bool(*this);
+    }
 
-    constexpr bool operator&&(const big_int& other) const noexcept
+    [[nodiscard]] constexpr bool operator&&(const big_int& other) const noexcept
     {
         return bool(*this) && bool(other);
     }
 
-    constexpr bool operator||(const big_int& other) const noexcept
+    [[nodiscard]] constexpr bool operator||(const big_int& other) const noexcept
     {
         return bool(*this) || bool(other);
     }
 
-    constexpr big_int operator~() const noexcept
+    // Bitwise operations
+
+    [[nodiscard]] constexpr big_int operator~() const noexcept
     {
         big_int cpy = *this;
         for (size_t i = 0; i < size; ++i)
@@ -305,33 +339,27 @@ struct big_int
         return cpy;
     }
 
-    constexpr big_int operator&(const big_int& other) const noexcept
+    [[nodiscard]] constexpr big_int operator&(
+        const big_int& other) const noexcept
     {
         big_int cpy = *this;
-        for (size_t i = 0; i < size; ++i)
-        {
-            cpy.raw[i] = raw[i] & other.raw[i];
-        }
+        cpy &= other;
         return cpy;
     }
 
-    constexpr big_int operator|(const big_int& other) const noexcept
+    [[nodiscard]] constexpr big_int operator|(
+        const big_int& other) const noexcept
     {
         big_int cpy = *this;
-        for (size_t i = 0; i < size; ++i)
-        {
-            cpy.raw[i] = raw[i] | other.raw[i];
-        }
+        cpy |= other;
         return cpy;
     }
 
-    constexpr big_int operator^(const big_int& other) const noexcept
+    [[nodiscard]] constexpr big_int operator^(
+        const big_int& other) const noexcept
     {
         big_int cpy = *this;
-        for (size_t i = 0; i < size; ++i)
-        {
-            cpy.raw[i] = raw[i] ^ other.raw[i];
-        }
+        cpy ^= other;
         return cpy;
     }
 
@@ -339,7 +367,7 @@ struct big_int
     constexpr big_int operator>>(const big_int& other) const noexcept;
 
     // Conversions
-    explicit operator bool() const noexcept
+    [[nodiscard]] explicit operator bool() const noexcept
     {
         for (const u8& byte : raw)
         {
