@@ -15,85 +15,52 @@ using i64 = std::int64_t;
 
 // slower, less efficient
 // but constexpr memcpy
-template <size_t destCnt, size_t cnt>
-constexpr std::array<u8, destCnt>& constexpr_memcpy(
-    std::array<u8, destCnt>& dest,
-    const std::array<u8, cnt>& src) noexcept
-{
-    static_assert(destCnt >= cnt,
-                  "The destination count must be able to hold cnt values");
+// template <size_t destCnt, size_t cnt>
+// constexpr std::array<u8, destCnt>& constexpr_memcpy(
+//    std::array<u8, destCnt>& dest,
+//    const std::array<u8, cnt>& src) noexcept
+//{
+//    static_assert(destCnt >= cnt,
+//                  "The destination count must be able to hold cnt values");
+//
+//    for (size_t i = 0; i < cnt; ++i)
+//    {
+//        dest[i] = src[i];
+//    }
+//
+//    return dest;
+//}
 
-    for (size_t i = 0; i < cnt; ++i)
-    {
-        dest[i] = src[i];
-    }
-
-    return dest;
-}
-
-template <typename T>
-constexpr std::array<u8, sizeof(T)> bytesOf(const T value)
-{
-    static_assert(std::is_integral<T>::value, "The type has to be integral!");
-    constexpr size_t bytesCnt = sizeof(T);
-
-    constexpr u8 byteMask = 0b11111111;
-    constexpr size_t bitsInByte = 8;
-    constexpr T typeMask = T(byteMask);
-
-    std::array<u8, bytesCnt> res{};
-
-    for (size_t i = 0; i < sizeof(T); ++i)
-    {
-        res[i] = value & (typeMask << (i * bitsInByte));
-    }
-    return res;
-}
-
-template <size_t size>
-constexpr bool is_rest_all_zeroes(const std::array<u8, size>& arr,
-                                  size_t idx) noexcept
-{
-    for (size_t i = idx; i < size; ++i)
-    {
-        if (arr[i] != 0)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <size_t dstCnt, size_t srcCnt>
-constexpr std::array<u8, dstCnt> sign_extend(
-    const std::array<u8, srcCnt>& src) noexcept
-{
-    static_assert(dstCnt >= srcCnt,
-                  "The resulting count has to be greater than(or equal) the "
-                  "destination count!");
-
-    constexpr u8 fillMask = 0b11111111;
-    constexpr u8 emptyMask = 0;
-    constexpr size_t bitsInByte = 8;
-
-    size_t currIdx = 0;
-    std::array<u8, dstCnt> res{};
-
-    bool sign = false;
-
-    while (!is_rest_all_zeroes(src, currIdx) && currIdx < dstCnt)
-    {
-        sign = src[currIdx] & (u8(1) << (bitsInByte - 1));
-        res[currIdx] = src[currIdx];
-        ++currIdx;
-    }
-
-    for (size_t i = srcCnt; i < dstCnt; ++i)
-    {
-        res[i] = sign ? fillMask : emptyMask;
-    }
-    return res;
-}
+// template <size_t dstCnt, size_t srcCnt>
+// constexpr std::array<u8, dstCnt> sign_extend(
+//    const std::array<u8, srcCnt>& src) noexcept
+//{
+//    static_assert(dstCnt >= srcCnt,
+//                  "The resulting count has to be greater than(or equal) the "
+//                  "destination count!");
+//
+//    constexpr u8 fillMask = 0b11111111;
+//    constexpr u8 emptyMask = 0;
+//    constexpr size_t bitsInByte = 8;
+//
+//    size_t currIdx = 0;
+//    std::array<u8, dstCnt> res{};
+//
+//    bool sign = false;
+//
+//    while (!is_rest_all_zeroes(src, currIdx) && currIdx < dstCnt)
+//    {
+//        sign = src[currIdx] & (u8(1) << (bitsInByte - 1));
+//        res[currIdx] = src[currIdx];
+//        ++currIdx;
+//    }
+//
+//    for (size_t i = srcCnt; i < dstCnt; ++i)
+//    {
+//        res[i] = sign ? fillMask : emptyMask;
+//    }
+//    return res;
+//}
 
 // Integer representation in size number of bytes
 // two's complement
@@ -131,7 +98,7 @@ struct big_int
         // for (size_t i = size - 1; i >= 0 && i < size; --i)
         for (size_t i = 0; i < size; ++i)
         {
-            if ((raw[i] != other.raw[i]))
+            if (raw[i] != other.raw[i])
             {
                 return false;
             }
@@ -145,7 +112,7 @@ struct big_int
         // for (size_t i = size - 1; i >= 0 && i < size; --i)
         for (size_t i = 0; i < size; ++i)
         {
-            if ((raw[i] == other.raw[i]))
+            if (raw[i] == other.raw[i])
             {
                 return false;
             }
@@ -430,7 +397,7 @@ private:
         static_assert(size >= sizeof(T),
                       "The size of the big int must be greater than the size "
                       "of the source type");
-        sign_extend_into_raw(bytesOf<T>(a));
+        sign_extend_into(raw, bytesOf<T>(a));
     }
 
     std::array<u8, size> raw = {0};
@@ -448,8 +415,43 @@ private:
         raw[size - 1] ^= (1U << (bitsInByte * sizeof(u8) - 1));
     }
 
+    template <typename T>
+    constexpr static std::array<u8, sizeof(T)> bytesOf(const T value)
+    {
+        static_assert(std::is_integral<T>::value,
+                      "The type has to be integral!");
+        constexpr size_t bytesCnt = sizeof(T);
+
+        constexpr u8 byteMask = 0b11111111;
+        constexpr size_t bitsInByte = 8;
+        constexpr T typeMask = T(byteMask);
+
+        std::array<u8, bytesCnt> res{};
+
+        for (size_t i = 0; i < sizeof(T); ++i)
+        {
+            res[i] = value & (typeMask << (i * bitsInByte));
+        }
+        return res;
+    }
+
+    template <size_t arrSz>
+    constexpr static bool is_rest_all_zeroes(const std::array<u8, arrSz>& arr,
+                                             size_t idx) noexcept
+    {
+        for (size_t i = idx; i < arrSz; ++i)
+        {
+            if (arr[i] != 0)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     template <size_t srcCnt>
-    constexpr void sign_extend_into_raw(
+    constexpr static void sign_extend_into(
+        std::array<u8, size>& raw,
         const std::array<u8, srcCnt>& src) noexcept
     {
         static_assert(
@@ -465,7 +467,7 @@ private:
 
         bool sign = false;
 
-        while (!is_rest_all_zeroes(src, currIdx) && currIdx < srcCnt)
+        while (!is_rest_all_zeroes<srcCnt>(src, currIdx) && currIdx < srcCnt)
         {
             sign = src[currIdx] & (u8(1) << (bitsInByte - 1));
             raw[currIdx] = src[currIdx];
