@@ -10,7 +10,7 @@ struct Foo
     int num;
 };
 
-constexpr size_t test_max_size = 16;
+constexpr size_t test_max_size = 8;
 
 int main()
 {
@@ -38,6 +38,26 @@ int main()
             big_int<test_max_size>::min();
         [[maybe_unused]] constexpr big_int<test_max_size> maximal =
             big_int<test_max_size>::max();
+
+        static_assert(minimal + maximal == -1);
+        static_assert(minimal - maximal == 1);
+        static_assert(maximal + 1 == minimal);
+        static_assert(maximal - minimal == -1);
+        static_assert(minimal - 1 == maximal);
+        static_assert(big_int<test_max_size>(-3) - big_int<test_max_size>(-2) ==
+                      -1);
+
+        constexpr big_int<test_max_size> two = 2;
+        constexpr big_int<test_max_size> three = 3;
+
+        static_assert(minimal < maximal);
+        static_assert(!(maximal < maximal));
+        static_assert(!(maximal < minimal));
+        static_assert(two < maximal);
+        static_assert(two < three);
+        static_assert(-two < three);
+        static_assert(-three < two);
+        static_assert(-three < -two);
     }
 
     {  // valid runtime
@@ -66,8 +86,14 @@ int main()
         overflow.increment();
         assert(overflow == minimal);
 
-        // assert(minimal < maximal);
-        // assert(!(maximal < maximal));
+        assert(minimal < maximal);
+        assert(!(maximal < maximal));
+        assert(!(maximal < minimal));
+        assert(two < maximal);
+        assert(two < three);
+        assert(-two < three);
+        assert(-three < two);
+        assert(-three < -two);
 
         big_int<test_max_size> underflow = big_int<test_max_size>::min();
         underflow.decrement();
@@ -93,9 +119,8 @@ int main()
         assert(!big_int<test_max_size>());
         assert(big_int<test_max_size>(1));
         assert(bool(big_int<test_max_size>(1)));
-        // assert(std::min(big_int<test_max_size>(1), big_int<test_max_size>(0))
-        // ==
-        //       0);
+        assert(std::min(big_int<test_max_size>(1), big_int<test_max_size>(0)) ==
+               0);
 
         big_int<test_max_size> five = 3;
         five += 2;
@@ -123,6 +148,7 @@ int main()
         //[[maybe_unused]] constexpr big_int<32> err(f);
         // [[maybe_unused]] constexpr big_int<32> err(3.14);
         // [[maybe_unused]] constexpr big_int<2> err(2ull);
+        //[[maybe_unused]] constexpr big_int<0> err;
 
         static_assert(
             !std::is_constructible<big_int<test_max_size>, Foo>::value);

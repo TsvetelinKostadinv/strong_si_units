@@ -13,53 +13,27 @@ using i8 = std::int8_t;
 using u64 = std::uint64_t;
 using i64 = std::int64_t;
 
-// slower, less efficient
-// but constexpr memcpy
-// template <size_t destCnt, size_t cnt>
-// constexpr std::array<u8, destCnt>& constexpr_memcpy(
-//    std::array<u8, destCnt>& dest,
-//    const std::array<u8, cnt>& src) noexcept
+// enum class cmp_result
 //{
-//    static_assert(destCnt >= cnt,
-//                  "The destination count must be able to hold cnt values");
+//    EQ,
+//    LT,
+//    GT,
+//};
 //
-//    for (size_t i = 0; i < cnt; ++i)
-//    {
-//        dest[i] = src[i];
-//    }
-//
-//    return dest;
-//}
-
-// template <size_t dstCnt, size_t srcCnt>
-// constexpr std::array<u8, dstCnt> sign_extend(
-//    const std::array<u8, srcCnt>& src) noexcept
+// template <size_t cnt, size_t offset>
+// constexpr cmp_result constexpr_memcmp(const std::array<u8, cnt>& buf1,
+//                                      const std::array<u8, cnt>& buf2)
 //{
-//    static_assert(dstCnt >= srcCnt,
-//                  "The resulting count has to be greater than(or equal) the "
-//                  "destination count!");
+//    static_assert(offset < cnt, "Offset out of bounds!");
 //
-//    constexpr u8 fillMask = 0b11111111;
-//    constexpr u8 emptyMask = 0;
-//    constexpr size_t bitsInByte = 8;
-//
-//    size_t currIdx = 0;
-//    std::array<u8, dstCnt> res{};
-//
-//    bool sign = false;
-//
-//    while (!is_rest_all_zeroes(src, currIdx) && currIdx < dstCnt)
+//    for (size_t i = offset; i < cnt; ++i)
 //    {
-//        sign = src[currIdx] & (u8(1) << (bitsInByte - 1));
-//        res[currIdx] = src[currIdx];
-//        ++currIdx;
+//        if (buf1[i] != buf2[i])
+//        {
+//            return buf1[i] < buf2[i] ? cmp_result::GT : cmp_result::LT;
+//        }
 //    }
-//
-//    for (size_t i = srcCnt; i < dstCnt; ++i)
-//    {
-//        res[i] = sign ? fillMask : emptyMask;
-//    }
-//    return res;
+//    return cmp_result::EQ;
 //}
 
 // Integer representation in size number of bytes
@@ -70,6 +44,7 @@ using i64 = std::int64_t;
 template <size_t size>
 struct big_int
 {
+    static_assert(size != 0, "Cannot have zero-sized integer!");
     // no constructors or operator=
     // the compiler can deduce
     constexpr big_int() noexcept = default;
@@ -108,25 +83,59 @@ struct big_int
 
     [[nodiscard]] constexpr bool operator!=(const big_int& other) const noexcept
     {
-        // code is repeated, but more precise optimizations can be made this way
-        // for (size_t i = size - 1; i >= 0 && i < size; --i)
-        for (size_t i = 0; i < size; ++i)
-        {
-            if (raw[i] == other.raw[i])
-            {
-                return false;
-            }
-        }
-        return true;
+        return !(*this == other);
     }
 
-    [[nodiscard]] constexpr bool operator<(const big_int& other) const noexcept;
-    [[nodiscard]] constexpr bool operator<=(
-        const big_int& other) const noexcept;
+    [[nodiscard]] constexpr bool operator<(const big_int& other) const noexcept
+    {
+        // invert the check for the most significant bit
+        if (isNegative() != other.isNegative())
+        {
+            return isNegative();
+        }
 
-    [[nodiscard]] constexpr bool operator>(const big_int& other) const noexcept;
-    [[nodiscard]] constexpr bool operator>=(
-        const big_int& other) const noexcept;
+        const u8 most_significant_byte_no_sign_this =
+            raw[size - 1] & ((u8(1) << u8(7)) - 1);
+        const u8 most_significant_byte_no_sign_other =
+            other.raw[size - 1] & ((u8(1) << u8(7)) - 1);
+
+        if (most_significant_byte_no_sign_this ==
+            most_significant_byte_no_sign_other)
+        {
+            // like memcpy, but in reverse
+            for (size_t i = size - 1; 0 <= i && i < size; --i)
+            {
+                if (raw[i] != other.raw[i])
+                {
+                    return raw[i] < other.raw[i];
+                }
+            }
+
+            return false;
+        }
+        else
+        {
+            return most_significant_byte_no_sign_this <
+                   most_significant_byte_no_sign_other;
+        }
+    }
+
+    [[nodiscard]] constexpr bool operator<=(const big_int& other) const noexcept
+    {
+        return *this < other || *this == other;
+    }
+
+    [[nodiscard]] constexpr bool operator>(const big_int& other) const noexcept
+    {
+        return !(*this <= other);
+    }
+
+    [[nodiscard]] constexpr bool operator>=(const big_int& other) const noexcept
+    {
+        return !(*this < other);
+    }
+
+    // TODO : spaceship operator
 
     // Modifying operations
 
@@ -218,11 +227,22 @@ struct big_int
         bool carry = false;
         for (size_t i = 0; i < size; ++i)
         {
-            u8 old = raw[i];
+            const u8 old = raw[i];
             raw[i] += other.raw[i];
-            raw[i] += carry;       // separate expression to prevent overflow on
-                                   // operands in the above row
-            carry = raw[i] < old;  // detect overflow
+            const bool overflowed_on_sum = raw[i] < old;
+
+            const u8 summed = raw[i];
+            raw[i] += carry;  // separate expression to prevent overflow on
+                              // operands in the first incrementation
+
+            const bool overflowed_on_carry = raw[i] < summed;
+            assert(overflowed_on_carry != overflowed_on_sum ||
+                   (overflowed_on_carry == overflowed_on_sum &&
+                    overflowed_on_carry == false));
+
+            carry = overflowed_on_carry || overflowed_on_sum;
+
+            // carry += raw[i] < old ? carry + 1 : 0;
         }
 
         // TODO : enable checks for overflow
@@ -232,16 +252,7 @@ struct big_int
 
     constexpr big_int& operator-=(const big_int& other) noexcept
     {
-        bool take = false;
-        for (size_t i = 0; i < size; ++i)
-        {
-            u8 old = raw[i];
-            raw[i] -= other.raw[i];
-            raw[i] -= take;       // separate expression to prevent overflow on
-                                  // operands in the above row
-            take = raw[i] > old;  // detect overflow
-        }
-
+        *this += -other;
         return *this;
     }
 
@@ -306,11 +317,40 @@ struct big_int
     }
 
     [[nodiscard]] constexpr big_int operator*(
-        const big_int& other) const noexcept;
+        const big_int& other) const noexcept
+    {
+        big_int res = *this;
+        res *= other;
+        return res;
+    }
+
     [[nodiscard]] constexpr big_int operator/(
-        const big_int& other) const noexcept;
+        const big_int& other) const noexcept
+    {
+        big_int res = *this;
+
+        if constexpr (other == 0)
+        {
+            throw std::runtime_error("Cannot divide by zero!");
+        }
+
+        res /= other;
+        return res;
+    }
+
     [[nodiscard]] constexpr big_int operator%(
-        const big_int& other) const noexcept;
+        const big_int& other) const noexcept
+    {
+        big_int res = *this;
+
+        if constexpr (other == 0)
+        {
+            throw std::runtime_error("Cannot find modulo by zero!");
+        }
+
+        res /= other;
+        return res;
+    }
 
     [[nodiscard]] constexpr bool operator!() const noexcept
     {
@@ -363,8 +403,19 @@ struct big_int
         return cpy;
     }
 
-    constexpr big_int operator<<(const big_int& other) const noexcept;
-    constexpr big_int operator>>(const big_int& other) const noexcept;
+    constexpr big_int operator<<(const big_int& other) const noexcept
+    {
+        big_int cpy = *this;
+        cpy <<= other;
+        return cpy;
+    }
+
+    constexpr big_int operator>>(const big_int& other) const noexcept
+    {
+        big_int cpy = *this;
+        cpy >>= other;
+        return cpy;
+    }
 
     // Conversions
     [[nodiscard]] explicit operator bool() const noexcept
