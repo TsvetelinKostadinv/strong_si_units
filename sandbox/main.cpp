@@ -3,6 +3,7 @@
 #include <string_view>
 
 #include <iostream>
+#include <numeric>
 
 #include "big_int.hpp"
 struct Foo
@@ -10,7 +11,7 @@ struct Foo
     int num;
 };
 
-constexpr size_t test_max_size = 8;
+constexpr size_t test_max_size = 128;
 
 int main()
 {
@@ -46,7 +47,7 @@ int main()
         static_assert(minimal - 1 == maximal);
         static_assert(big_int<test_max_size>(-3) - big_int<test_max_size>(-2) ==
                       -1);
-
+        constexpr big_int<test_max_size> one = 1;
         constexpr big_int<test_max_size> two = 2;
         constexpr big_int<test_max_size> three = 3;
 
@@ -58,6 +59,17 @@ int main()
         static_assert(-two < three);
         static_assert(-three < two);
         static_assert(-three < -two);
+
+        static_assert((one << 3) == (1 << 3));
+        static_assert((one >> 0) == (1 >> 0));
+        static_assert((one >> 3) == (1 >> 3));
+
+        // constexpr auto gcd = std::gcd(two, two * three);
+
+        // static_assert(gcd == 2);
+        static_assert(std::clamp(three, one, two) == 2);
+
+        // static_assert(123_bi == 123);
     }
 
     {  // valid runtime
@@ -139,6 +151,36 @@ int main()
             big_int<test_max_size>::min();
         wrap_test_on_minus_eq -= 1;
         assert(wrap_test_on_minus_eq == big_int<test_max_size>::max());
+
+        // big_int<sizeof(long long)> i_bi = 0;
+        // for (long long i = 0; i < 1024; ++i, ++i_bi)
+        //{
+        //    big_int<sizeof(long long)> j_bi = long long(0);
+        //    for (long long j = 0; j < 1024; ++j, ++j_bi)
+        //    {
+        //        if (i_bi + j_bi != long long(i + j))
+        //        {
+        //            printf("Different!");
+        //        }
+        //        if (i_bi * j_bi != long long(i * j))
+        //        {
+        //            printf("Different mult!");
+        //        }
+        //    }
+        //}
+
+        {  // custom literal testing
+            big_int<128> correct = 123;
+            big_int<128> correct_neg = -123;
+            //big_int avogadro = 602'214'076'000'000'000'000'000_bi;
+
+            auto one_two_three = 123_bi;
+            auto minus_one_two_three = -123_bi;
+
+            assert(one_two_three == correct);
+            assert(minus_one_two_three == correct_neg);
+            assert(+0_bi == -0_bi);
+        }
     }
 
     {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <any>
 #include <array>
 #include <cassert>
 #include <cstdint>
@@ -36,6 +35,11 @@ using i64 = std::int64_t;
 //    return cmp_result::EQ;
 //}
 
+constexpr static bool constexpr_is_digit(char ch) noexcept
+{
+    return '0' <= ch && ch <= '9';
+}
+
 // Integer representation in size number of bytes
 // two's complement
 // constexpr friendly
@@ -45,8 +49,6 @@ template <size_t size>
 struct big_int
 {
     static_assert(size != 0, "Cannot have zero-sized integer!");
-    // no constructors or operator=
-    // the compiler can deduce
     constexpr big_int() noexcept = default;
 
     // Specifically not explicit so it can be used like regular numbers
@@ -103,7 +105,7 @@ struct big_int
             most_significant_byte_no_sign_other)
         {
             // like memcpy, but in reverse
-            for (size_t i = size - 1; 0 <= i && i < size; --i)
+            for (size_t i = size - 1; i < size; --i)
             {
                 if (raw[i] != other.raw[i])
                 {
@@ -139,50 +141,6 @@ struct big_int
 
     // Modifying operations
 
-    // Increments the number by one
-    constexpr void increment() noexcept
-    {
-        bool carry = false;
-        size_t currIdx = 0;
-        do
-        {
-            u8 oldValue = raw[currIdx];
-            ++raw[currIdx];
-            carry = oldValue > raw[currIdx];
-            ++currIdx;
-        } while (carry && currIdx < size);
-
-        // TODO: if the currIdx is size, then there is overlow
-        // maybe make it configurable so it throws
-    }
-
-    // Decrements the number by one
-    constexpr void decrement() noexcept
-    {
-        bool take = false;
-        size_t currIdx = 0;
-        do
-        {
-            u8 oldValue = raw[currIdx];
-            --raw[currIdx];
-            take = oldValue < raw[currIdx];
-            ++currIdx;
-        } while (take && currIdx < size);
-
-        // TODO: if the currIdx is size, then there is underflow
-        // maybe make it configurable so it throws
-    }
-
-    // negates the number in two's complement
-    constexpr void negate() noexcept
-    {
-        for (size_t i = 0; i < size; ++i)
-        {
-            raw[i] = ~raw[i];
-        }
-        increment();
-    }
-
     // Makes the number it's absolute value
     constexpr void abs() noexcept
     {
@@ -207,7 +165,7 @@ struct big_int
     }
 
     // Postfix oeprator ++
-    constexpr big_int operator++(int) noexcept
+    constexpr big_int operator++(int) noexcept  // NOLINT(cert-dcl21-cpp)
     {
         const big_int cpy = *this;
         increment();
@@ -215,7 +173,7 @@ struct big_int
     }
 
     // Postfix oeprator --
-    constexpr big_int operator--(int) noexcept
+    constexpr big_int operator--(int) noexcept  // NOLINT(cert-dcl21-cpp)
     {
         const big_int cpy = *this;
         decrement();
@@ -237,12 +195,9 @@ struct big_int
 
             const bool overflowed_on_carry = raw[i] < summed;
             assert(overflowed_on_carry != overflowed_on_sum ||
-                   (overflowed_on_carry == overflowed_on_sum &&
-                    overflowed_on_carry == false));
+                   !overflowed_on_carry || !overflowed_on_sum);
 
             carry = overflowed_on_carry || overflowed_on_sum;
-
-            // carry += raw[i] < old ? carry + 1 : 0;
         }
 
         // TODO : enable checks for overflow
@@ -256,9 +211,41 @@ struct big_int
         return *this;
     }
 
-    constexpr big_int& operator*=(const big_int& other) noexcept;
+    constexpr big_int& operator<<=(const big_int& other) noexcept
+    {
+        assert(other >= 0 &&
+               "Need to shift by a positive amount, maybe you need "
+               "to use the other shift!");
+
+        for (big_int i = zero(); i < other; ++i)
+        {
+            left_shift_once();
+        }
+        return *this;
+    }
+
+    constexpr big_int& operator>>=(const big_int& other) noexcept
+    {
+        assert(other >= 0 &&
+               "Need to shift by a positive amount, maybe you need "
+               "to use the other shift!");
+
+        for (big_int i = u8(0); i < other; ++i)
+        {
+            right_shift_once();
+        }
+        return *this;
+    }
+
+    constexpr big_int& operator*=(const big_int& other) noexcept
+    {
+        *this = *this * other;
+        return *this;
+    }
+
     constexpr big_int& operator/=(const big_int& other) noexcept;
     constexpr big_int& operator%=(const big_int& other) noexcept;
+
     constexpr big_int& operator&=(const big_int& other) noexcept
     {
         for (size_t i = 0; i < size; ++i)
@@ -286,11 +273,10 @@ struct big_int
         return *this;
     }
 
-    constexpr big_int& operator<<=(const big_int& other) noexcept;
-    constexpr big_int& operator>>=(const big_int& other) noexcept;
-
     // Non-modifying operators
+
     constexpr big_int operator+() const noexcept { return *this; }
+
     [[nodiscard]] constexpr big_int operator-() const noexcept
     {
         big_int cpy = *this;
@@ -319,8 +305,46 @@ struct big_int
     [[nodiscard]] constexpr big_int operator*(
         const big_int& other) const noexcept
     {
-        big_int res = *this;
-        res *= other;
+        // check out
+        // 1. https://en.wikipedia.org/wiki/Karatsuba_algorithm
+        // 2. https://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
+        // 3.
+        // https://en.wikipedia.org/wiki/Sch%C3%B6nhage%E2%80%93Strassen_algorithm
+        // 4. https://en.wikipedia.org/wiki/F%C3%BCrer%27s_algorithm
+        // 5.
+        // https://projecteuclid.org/journals/annals-of-mathematics/volume-193/issue-2/Integer-multiplication-in-time-Onmathrmlog-n/10.4007/annals.2021.193.2.4.short
+
+        // big_int res = 0;
+
+        // big_int summand = other;
+
+        // for (size_t byte_idx = 0; byte_idx < size; ++byte_idx)
+        //{
+        //    for (u8 bit_idx = 0; bit_idx < 8;
+        //         ++bit_idx, summand.left_shift_once())
+        //    {
+        //        if (is_bit_set(byte_idx, bit_idx))
+        //        {
+        //            res += summand;
+        //        }
+        //    }
+        //}
+
+        big_int res = 0;
+
+        const bool should_negate = other.isNegative();
+
+        const big_int abs_other = other.isNegative() ? -other : other;
+
+        for (big_int i = 0; i < abs_other; ++i)
+        {
+            res += *this;
+        }
+
+        if (should_negate)
+        {
+            res.negate();
+        }
         return res;
     }
 
@@ -328,12 +352,6 @@ struct big_int
         const big_int& other) const noexcept
     {
         big_int res = *this;
-
-        if constexpr (other == 0)
-        {
-            throw std::runtime_error("Cannot divide by zero!");
-        }
-
         res /= other;
         return res;
     }
@@ -342,12 +360,6 @@ struct big_int
         const big_int& other) const noexcept
     {
         big_int res = *this;
-
-        if constexpr (other == 0)
-        {
-            throw std::runtime_error("Cannot find modulo by zero!");
-        }
-
         res /= other;
         return res;
     }
@@ -430,18 +442,15 @@ struct big_int
         return false;
     }
 
-    // Utilities
-    [[nodiscard]] constexpr const char* to_string() const noexcept;
-
     // Static factory methods
     [[nodiscard]] constexpr static big_int zero() noexcept
     {
-        return big_int<size>(0);
+        return big_int<size>(u8(0));
     }
 
     [[nodiscard]] constexpr static big_int one() noexcept
     {
-        return big_int<size>(1);
+        return big_int<size>(u8(1));
     }
 
     [[nodiscard]] constexpr static big_int(min)() noexcept
@@ -451,21 +460,50 @@ struct big_int
         return tmp;
     }
 
-    [[nodiscard]] constexpr static big_int(max)() noexcept
+    [[nodiscard]] constexpr static big_int(max)() noexcept { return ~min(); }
+
+    // TODO : disallow consecutive separator chars - '
+    // TODO : parse octal and hex numbers
+    template <size_t arrSz>
+    [[nodiscard]] constexpr static big_int from_fixed_char_array(
+        const std::array<char, arrSz>& arr) /*noexcept*/
     {
-        constexpr u8 byteMask = 0b11111111;
+        static_assert(arrSz > 1, "Cannot have zero length integers!");
 
-        big_int<size> tmp;
-        for (size_t i = 0; i < size; ++i)
+        const big_int base = 10;
+        big_int res = 0;
+
+        const bool should_negate = arr[0] == '-';
+        const bool should_skip_first = should_negate || (arr[0] == '+');
+
+        for (size_t i = should_skip_first ? 1 : 0; i < arrSz && arr[i] != '\0';
+             ++i)
         {
-            tmp.raw[i] = byteMask;
-        }
-        tmp.flipSignBit();
+            if (arr[i] == '\'')
+            {
+                continue;
+            }
 
-        return tmp;
+            if (!constexpr_is_digit(arr[i]))
+            {
+                throw std::invalid_argument("Illegal character in number!");
+            }
+
+            res *= base;
+            res += arr[i] - '0';
+        }
+
+        if (should_negate)
+        {
+            res.negate();
+        }
+        return res;
     }
 
-    // static_assert(min() < max(), "The min should be less than the max!");
+    // stored in order from least significant to most significant
+    // 0 -> least significant
+    // size - 1 -> most significant
+    std::array<u8, size> raw = {0};
 
 private:
     template <typename T>
@@ -478,8 +516,6 @@ private:
                       "of the source type");
         sign_extend_into(raw, bytesOf<T>(a));
     }
-
-    std::array<u8, size> raw = {0};
 
     // true if the number is negative
     [[nodiscard]] constexpr bool isNegative() const
@@ -509,7 +545,8 @@ private:
 
         for (size_t i = 0; i < sizeof(T); ++i)
         {
-            res[i] = value & (typeMask << (i * bitsInByte));
+            res[i] =
+                (value & (typeMask << (i * bitsInByte))) >> (i * bitsInByte);
         }
         return res;
     }
@@ -518,6 +555,7 @@ private:
     constexpr static bool is_rest_all_zeroes(const std::array<u8, arrSz>& arr,
                                              size_t idx) noexcept
     {
+        // assert(idx < arrSz && "Cannot check ouside of array!");
         for (size_t i = idx; i < arrSz; ++i)
         {
             if (arr[i] != 0)
@@ -539,33 +577,230 @@ private:
             "destination count!");
 
         constexpr u8 fillMask = 0b11111111;
-        constexpr u8 emptyMask = 0;
-        constexpr size_t bitsInByte = 8;
+        constexpr u8 emptyMask = 0b00000000;
 
         size_t currIdx = 0;
 
-        bool sign = false;
-
         while (!is_rest_all_zeroes<srcCnt>(src, currIdx) && currIdx < srcCnt)
         {
-            sign = src[currIdx] & (u8(1) << (bitsInByte - 1));
             raw[currIdx] = src[currIdx];
             ++currIdx;
         }
+
+        const bool sign = most_significant_bit(src[srcCnt - 1]) != 0;
 
         for (size_t i = currIdx; i < size; ++i)
         {
             raw[i] = sign ? fillMask : emptyMask;
         }
     }
+
+    constexpr static u8 most_significant_bit(u8 byte) noexcept
+    {
+        return (byte & 0b10000000) >> 7;
+    }
+
+    constexpr static u8 least_significant_bit(u8 byte) noexcept
+    {
+        return byte & 1;
+    }
+
+    // negates the number in two's complement
+    constexpr void negate() noexcept
+    {
+        for (size_t i = 0; i < size; ++i)
+        {
+            raw[i] = ~raw[i];
+        }
+        increment();
+    }
+
+    // Increments the number by one
+    constexpr void increment() noexcept
+    {
+        bool carry = false;
+        size_t currIdx = 0;
+        do
+        {
+            u8 oldValue = raw[currIdx];
+            ++raw[currIdx];
+            carry = oldValue > raw[currIdx];
+            ++currIdx;
+        } while (carry && currIdx < size);
+
+        // TODO: if the currIdx is size, then there is overlow
+        // maybe make it configurable so it throws
+    }
+
+    // Decrements the number by one
+    constexpr void decrement() noexcept
+    {
+        bool take = false;
+        size_t currIdx = 0;
+        do
+        {
+            u8 oldValue = raw[currIdx];
+            --raw[currIdx];
+            take = oldValue < raw[currIdx];
+            ++currIdx;
+        } while (take && currIdx < size);
+
+        // TODO: if the currIdx is size, then there is underflow
+        // maybe make it configurable so it throws
+    }
+
+    constexpr void left_shift_once()
+    {
+        u8 carry = 0;
+        for (size_t i = 0; i < size; ++i)
+        {
+            const u8 msb = most_significant_bit(raw[i]);
+            raw[i] <<= 1;
+            raw[i] |= carry;
+            carry = msb;
+        }
+    }
+
+    constexpr void right_shift_once()
+    {
+        u8 carry = 0;
+
+        for (size_t i = size - 1; i < size; --i)
+        {
+            const u8 lsb = least_significant_bit(raw[i]);
+            raw[i] >>= 1;
+            raw[i] |= (carry << 7);
+            carry = lsb;
+        }
+    }
+
+    constexpr bool is_bit_set(size_t byte_idx, u8 bit_idx) const
+    {
+        assert(byte_idx < size);
+        assert(bit_idx < 8);
+        return raw[byte_idx] & (1 << (bit_idx));
+    }
 };
 
-// template <char... c>
-// struct size_to_fit : std::integral_constant<size_t, 2>
-//{
-//};
-//
-// template <char... c>
-// constexpr big_int<size_to_fit<c...>::value> operator""_bi() noexcept
+// TODO : user defined literals
+template <char... c>
+struct size_to_fit : std::integral_constant<size_t, 128>
+{
+};
+
+template <char... c>
+constexpr big_int<size_to_fit<c...>::value> operator""_bi() noexcept
+{
+    constexpr std::array<char, sizeof...(c) + 1> str = {c...};
+
+    return big_int<size_to_fit<c...>::value>::template from_fixed_char_array(
+        str);
+}
+
+#include <numeric>
+#include <string>
+
+// constexpr auto avogardo_number = 602'214'076'000'000'000'000'000_bi;
+// constexpr auto speed_of_light = 299'792'458_bi;
+// constexpr auto hyperfine_transition_freq_cs = 9'192'631'770_bi;
+// constexpr auto monochromatic_radiation_freq_candela = 540'000'000'000'000_bi;
+
+// static_assert(std::is_pod_v<big_int<128>>);
+// static_assert(std::is_trivial_v<big_int<128>>);
+
+static_assert(std::is_nothrow_constructible_v<big_int<128>>);
+static_assert(std::is_default_constructible_v<big_int<128>>);
+static_assert(std::is_nothrow_default_constructible_v<big_int<128>>);
+
+static_assert(std::is_trivially_copyable_v<big_int<128>>);
+
+// static_assert(std::is_literal_type_v<big_int<128>>);
+static_assert(std::has_unique_object_representations_v<big_int<128>>);
+
+static_assert(std::is_move_constructible_v<big_int<128>>);
+static_assert(std::is_trivially_move_constructible_v<big_int<128>>);
+static_assert(std::is_nothrow_move_constructible_v<big_int<128>>);
+
+// static_assert(std::is_assignable_v<big_int<128>,>);
+// static_assert(std::is_trivially_assignable_v<big_int<128>>);
+// static_assert(std::is_nothrow_assignable_v<big_int<128>>);
+
+// template <size_t size>
+//[[nodiscard]] constexpr
+//    typename std::common_type_t<big_int<size>, big_int<size>>
+//        std::gcd<big_int<size>, big_int<size>>(big_int<size>, big_int<size>)
 //{
 //}
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> gcd(
+    const big_int<size>& a,
+    const big_int<size>& b) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> lcm(
+    const big_int<size>& a,
+    const big_int<size>& b) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> midpoint(
+    const big_int<size>& a,
+    const big_int<size>& b) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> log(
+    const big_int<size>& base,
+    const big_int<size>& number) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static std::string to_string(
+    const big_int<size>& num) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> from_string(
+    const std::string& str) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static std::string rotl(
+    const big_int<size>& num) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static std::string rotr(
+    const big_int<size>& num) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static std::string popcnt(
+    const big_int<size>& num) noexcept;
+
+template <size_t size>
+[[nodiscard]] static constexpr big_int<size> mirror(
+    const big_int<size>& num) noexcept
+{
+    big_int res;
+    for (size_t i = 0; i < size; ++i)
+    {
+        res.raw[i] = raw[size - i - 1];
+    }
+    return res;
+}
+
+template <size_t size>
+[[nodiscard]] static constexpr const big_int<size>& clamp(
+    const big_int<size>& num,
+    const big_int<size>& low,
+    const big_int<size>& high) noexcept
+{
+    assert(low < high);
+    if (num < low)
+    {
+        return low;
+    }
+    else if (num > high)
+    {
+        return high;
+    }
+    else
+    {
+        return num;
+    }
+}

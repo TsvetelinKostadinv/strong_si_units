@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(big_int CXX)
+project(SI_units CXX)
 
 option(ENABLE_SANDBOX "Should the sandbox project be included" ON)
 option(ENABLE_TESTS "Should the test project be included" OFF)
@@ -56,14 +56,14 @@ if(ENABLE_CLANG_TIDY)
   endif()
 endif()
 
-add_subdirectory(src)
-target_compile_options(big_int INTERFACE ${PROJECT_WARNINGS})
+# add_subdirectory(src)
+# target_compile_options(SI_units INTERFACE ${PROJECT_WARNINGS})
 
 add_subdirectory(sandbox)
-target_compile_options(sandbox INTERFACE ${PROJECT_WARNINGS})
+add_compile_options(sandbox INTERFACE ${PROJECT_WARNINGS})
 
 if(ENABLE_TESTING)
-  # enable_testing()
+  enable_testing()
   add_subdirectory(test)
-  target_compile_options(test INTERFACE ${PROJECT_WARNINGS})
+  add_compile_options(test INTERFACE ${PROJECT_WARNINGS})
 endif()
