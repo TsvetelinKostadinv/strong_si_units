@@ -44,13 +44,13 @@ struct big_int
     template <
         typename T,
         typename = typename std::enable_if<std::is_integral<T>::value>::type>
-    constexpr big_int(T a)  // NOLINT(hicpp-explicit-conversions)
+    constexpr big_int(T a) noexcept  // NOLINT(hicpp-explicit-conversions)
     {
         big_int_init<T>(a);
     }
 
     template <typename T>
-    constexpr big_int& operator=(T a)
+    constexpr big_int& operator=(T a) noexcept
     {
         big_int_init<T>(a);
         return *this;
@@ -232,8 +232,8 @@ struct big_int
         return *this;
     }
 
-    constexpr big_int& operator/=(const big_int& other) noexcept;
-    constexpr big_int& operator%=(const big_int& other) noexcept;
+    constexpr big_int& operator/=(const big_int& other);
+    constexpr big_int& operator%=(const big_int& other);
 
     constexpr big_int& operator&=(const big_int& other) noexcept
     {
@@ -511,7 +511,7 @@ private:
     //}
 
     template <typename T>
-    constexpr void big_int_init(T a)
+    constexpr void big_int_init(T a) noexcept
     {
         static_assert(std::is_integral<T>::value,
                       "The type has to be integral!");
@@ -523,20 +523,20 @@ private:
     }
 
     // true if the number is negative
-    [[nodiscard]] constexpr bool isNegative() const
+    [[nodiscard]] constexpr bool isNegative() const noexcept
     {
         constexpr size_t bitsInByte = 8;
         return raw[size - 1] & (1U << (bitsInByte * sizeof(u8) - 1));
     }
 
-    constexpr void flipSignBit()
+    constexpr void flipSignBit() noexcept
     {
         constexpr size_t bitsInByte = 8;
         raw[size - 1] ^= (1U << (bitsInByte * sizeof(u8) - 1));
     }
 
     template <typename T>
-    constexpr static std::array<u8, sizeof(T)> bytesOf(const T value)
+    constexpr static std::array<u8, sizeof(T)> bytesOf(const T value) noexcept
     {
         static_assert(std::is_integral<T>::value,
                       "The type has to be integral!");
@@ -644,7 +644,7 @@ private:
         // maybe make it configurable so it throws
     }
 
-    constexpr void left_shift_once()
+    constexpr void left_shift_once() noexcept
     {
         u8 carry = 0;
         for (size_t i = 0; i < size; ++i)
@@ -656,7 +656,7 @@ private:
         }
     }
 
-    constexpr void right_shift_once()
+    constexpr void right_shift_once() noexcept
     {
         u8 carry = 0;
 
@@ -669,7 +669,7 @@ private:
         }
     }
 
-    constexpr bool is_bit_set(size_t byte_idx, u8 bit_idx) const
+    constexpr bool is_bit_set(size_t byte_idx, u8 bit_idx) const noexcept
     {
         assert(byte_idx < size);
         assert(bit_idx < 8);
@@ -694,7 +694,6 @@ constexpr big_int<size_to_fit<c...>::value> operator""_bi() noexcept
 
 // TODO : Specialize numeric_limits for bigint
 #include <limits>
-
 
 #include <type_traits>
 
