@@ -600,16 +600,6 @@ private:
         }
     }
 
-    constexpr static u8 most_significant_bit(u8 byte) noexcept
-    {
-        return (byte & 0b10000000) >> 7;
-    }
-
-    constexpr static u8 least_significant_bit(u8 byte) noexcept
-    {
-        return byte & 1;
-    }
-
     // negates the number in two's complement
     constexpr void negate() noexcept
     {
