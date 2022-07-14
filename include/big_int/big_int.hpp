@@ -347,7 +347,7 @@ struct big_int
         const big_int& other) const noexcept
     {
         big_int res = *this;
-        res /= other;
+        res %= other;
         return res;
     }
 
@@ -498,42 +498,7 @@ private:
     // TODO : reinterpret the raw as an array of the
     // fastest unsigned integer and make calculations in that
 
-    // using widest_fast_uint = std::uint_fast64_t;
-    // constexpr static size_t fastest_bytes = sizeof(widest_fast_uint);
-
-    // static const size_t widest_fast_cnt = size / sizeof(widest_fast_uint);
-    // static const bool has_padding_in_raw = size % sizeof(widest_fast_uint) !=
-    // 0;
-
-    // constexpr widest_fast_uint* const raw_view_fastest() noexcept
-    //{
-    //    return reinterpret_cast<widest_fast_uint* const> raw.data();
-    //}
-
-    template <typename T>
-    constexpr void big_int_init(T a) noexcept
-    {
-        static_assert(std::is_integral<T>::value,
-                      "The type has to be integral!");
-        static_assert(size >= sizeof(T),
-                      "The size of the big int must be greater than the size "
-                      "of the source type");
-
-        sign_extend_into(raw, bytesOf<T>(a));
-    }
-
-    // true if the number is negative
-    [[nodiscard]] constexpr bool isNegative() const noexcept
-    {
-        constexpr size_t bitsInByte = 8;
-        return raw[size - 1] & (1U << (bitsInByte * sizeof(u8) - 1));
-    }
-
-    constexpr void flipSignBit() noexcept
-    {
-        constexpr size_t bitsInByte = 8;
-        raw[size - 1] ^= (1U << (bitsInByte * sizeof(u8) - 1));
-    }
+#pragma region initialization_from_arithmetic
 
     template <typename T>
     constexpr static std::array<u8, sizeof(T)> bytesOf(const T value) noexcept
@@ -600,6 +565,33 @@ private:
         }
     }
 
+    template <typename T>
+    constexpr void big_int_init(T a) noexcept
+    {
+        static_assert(std::is_integral<T>::value,
+                      "The type has to be integral!");
+        static_assert(size >= sizeof(T),
+                      "The size of the big int must be greater than the size "
+                      "of the source type");
+
+        sign_extend_into(raw, bytesOf<T>(a));
+    }
+#pragma endregion
+
+#pragma region sign_access_and_manipulation
+    // true if the number is negative
+    [[nodiscard]] constexpr bool isNegative() const noexcept
+    {
+        constexpr size_t bitsInByte = 8;
+        return raw[size - 1] & (1U << (bitsInByte * sizeof(u8) - 1));
+    }
+
+    constexpr void flipSignBit() noexcept
+    {
+        constexpr size_t bitsInByte = 8;
+        raw[size - 1] ^= (1U << (bitsInByte * sizeof(u8) - 1));
+    }
+
     // negates the number in two's complement
     constexpr void negate() noexcept
     {
@@ -610,6 +602,9 @@ private:
         increment();
     }
 
+#pragma endregion
+
+#pragma region arithmetic_helpers
     // Increments the number by one
     constexpr void increment() noexcept
     {
@@ -643,7 +638,9 @@ private:
         // TODO: if the currIdx is size, then there is underflow
         // maybe make it configurable so it throws
     }
+#pragma endregion
 
+#pragma region bitwise_helpers
     constexpr void left_shift_once() noexcept
     {
         u8 carry = 0;
@@ -675,6 +672,7 @@ private:
         assert(bit_idx < 8);
         return raw[byte_idx] & (1 << (bit_idx));
     }
+#pragma endregion
 };
 
 // TODO : user defined literals
