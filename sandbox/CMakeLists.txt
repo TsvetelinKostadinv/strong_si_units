@@ -4,6 +4,8 @@ set(SOURCES
 
 set(HEADERS
   ../include/big_int/big_int.hpp
+  ../include/big_int/big_int64.hpp
+  ../include/util.hpp
 )
 
 add_executable(sandbox ${SOURCES} ${HEADERS})

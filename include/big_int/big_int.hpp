@@ -1,17 +1,10 @@
 #pragma once
 
+#include "../util.hpp"
+
 #include <array>
 //#include <cassert>
-#include <cstdint>
-#include <new>
 #include <stdexcept>
-#include <type_traits>
-
-// utils, to be extracted to another file
-using u8 = std::uint8_t;
-using i8 = std::int8_t;
-using u64 = std::uint64_t;
-using i64 = std::int64_t;
 
 // enum class cmp_result
 //{
@@ -35,11 +28,6 @@ using i64 = std::int64_t;
 //    }
 //    return cmp_result::EQ;
 //}
-
-constexpr static bool constexpr_is_digit(char ch) noexcept
-{
-    return '0' <= ch && ch <= '9';
-}
 
 // Integer representation in size number of bytes
 // two's complement
@@ -433,7 +421,7 @@ struct big_int
     // Conversions
     [[nodiscard]] explicit operator bool() const noexcept
     {
-        for (const u8& byte : raw)
+        for (const u8 byte : raw)
         {
             if (byte != 0)
             {
@@ -717,8 +705,8 @@ constexpr big_int<size_to_fit<c...>::value> operator""_bi() noexcept
 // TODO : Specialize numeric_limits for bigint
 #include <limits>
 
-#include <numeric>
-#include <string>
+
+#include <type_traits>
 
 // constexpr auto avogardo_number = 602'214'076'000'000'000'000'000_bi;
 // constexpr auto speed_of_light = 299'792'458_bi;
@@ -751,6 +739,9 @@ static_assert(std::is_nothrow_move_constructible_v<big_int<128>>);
 //        std::gcd<big_int<size>, big_int<size>>(big_int<size>, big_int<size>)
 //{
 //}
+
+//#include <numeric>
+#include <string>
 
 template <size_t size>
 [[nodiscard]] constexpr static big_int<size> gcd(

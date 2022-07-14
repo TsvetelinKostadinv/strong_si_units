@@ -7,6 +7,7 @@
 #include <numeric>
 
 #include "big_int.hpp"
+#include "big_int64.hpp"
 
 struct Foo
 {
@@ -17,6 +18,8 @@ constexpr size_t test_max_size = 128;
 
 int main()
 {
+    big_int64<128> bi64;
+
     {  // valid constexpr
         [[maybe_unused]] constexpr big_int<test_max_size> def;
         static_assert(sizeof(def) == test_max_size);
