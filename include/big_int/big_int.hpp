@@ -1,8 +1,9 @@
 #pragma once
 
 #include <array>
-#include <cassert>
+//#include <cassert>
 #include <cstdint>
+#include <new>
 #include <stdexcept>
 #include <type_traits>
 
@@ -194,8 +195,8 @@ struct big_int
                               // operands in the first incrementation
 
             const bool overflowed_on_carry = raw[i] < summed;
-            assert(overflowed_on_carry != overflowed_on_sum ||
-                   !overflowed_on_carry || !overflowed_on_sum);
+            // assert(overflowed_on_carry != overflowed_on_sum ||
+            //       !overflowed_on_carry || !overflowed_on_sum);
 
             carry = overflowed_on_carry || overflowed_on_sum;
         }
@@ -213,9 +214,9 @@ struct big_int
 
     constexpr big_int& operator<<=(const big_int& other) noexcept
     {
-        assert(other >= 0 &&
-               "Need to shift by a positive amount, maybe you need "
-               "to use the other shift!");
+        // assert(other >= 0 &&
+        //       "Need to shift by a positive amount, maybe you need "
+        //       "to use the other shift!");
 
         for (big_int i = zero(); i < other; ++i)
         {
@@ -226,9 +227,9 @@ struct big_int
 
     constexpr big_int& operator>>=(const big_int& other) noexcept
     {
-        assert(other >= 0 &&
-               "Need to shift by a positive amount, maybe you need "
-               "to use the other shift!");
+        // assert(other >= 0 &&
+        //       "Need to shift by a positive amount, maybe you need "
+        //       "to use the other shift!");
 
         for (big_int i = u8(0); i < other; ++i)
         {
@@ -283,8 +284,6 @@ struct big_int
         cpy.negate();
         return cpy;
     }
-
-    [[nodiscard]] constexpr big_int log(const big_int& base) const noexcept;
 
     [[nodiscard]] constexpr big_int operator+(
         const big_int& other) const noexcept
@@ -415,14 +414,16 @@ struct big_int
         return cpy;
     }
 
-    constexpr big_int operator<<(const big_int& other) const noexcept
+    [[nodiscard]] constexpr big_int operator<<(
+        const big_int& other) const noexcept
     {
         big_int cpy = *this;
         cpy <<= other;
         return cpy;
     }
 
-    constexpr big_int operator>>(const big_int& other) const noexcept
+    [[nodiscard]] constexpr big_int operator>>(
+        const big_int& other) const noexcept
     {
         big_int cpy = *this;
         cpy >>= other;
@@ -506,6 +507,21 @@ struct big_int
     std::array<u8, size> raw = {0};
 
 private:
+    // TODO : reinterpret the raw as an array of the
+    // fastest unsigned integer and make calculations in that
+
+    // using widest_fast_uint = std::uint_fast64_t;
+    // constexpr static size_t fastest_bytes = sizeof(widest_fast_uint);
+
+    // static const size_t widest_fast_cnt = size / sizeof(widest_fast_uint);
+    // static const bool has_padding_in_raw = size % sizeof(widest_fast_uint) !=
+    // 0;
+
+    // constexpr widest_fast_uint* const raw_view_fastest() noexcept
+    //{
+    //    return reinterpret_cast<widest_fast_uint* const> raw.data();
+    //}
+
     template <typename T>
     constexpr void big_int_init(T a)
     {
@@ -514,6 +530,7 @@ private:
         static_assert(size >= sizeof(T),
                       "The size of the big int must be greater than the size "
                       "of the source type");
+
         sign_extend_into(raw, bytesOf<T>(a));
     }
 
@@ -697,6 +714,9 @@ constexpr big_int<size_to_fit<c...>::value> operator""_bi() noexcept
         str);
 }
 
+// TODO : Specialize numeric_limits for bigint
+#include <limits>
+
 #include <numeric>
 #include <string>
 
@@ -714,7 +734,7 @@ static_assert(std::is_nothrow_default_constructible_v<big_int<128>>);
 
 static_assert(std::is_trivially_copyable_v<big_int<128>>);
 
-// static_assert(std::is_literal_type_v<big_int<128>>);
+static_assert(std::is_literal_type_v<big_int<128>>);
 static_assert(std::has_unique_object_representations_v<big_int<128>>);
 
 static_assert(std::is_move_constructible_v<big_int<128>>);
@@ -745,11 +765,45 @@ template <size_t size>
 template <size_t size>
 [[nodiscard]] constexpr static big_int<size> midpoint(
     const big_int<size>& a,
-    const big_int<size>& b) noexcept;
+    const big_int<size>& b) noexcept
+{
+    const big_int<size> half_a = a >> 2;
+    const big_int<size> half_b = b >> 2;
+    return half_a + half_b;
+}
 
 template <size_t size>
 [[nodiscard]] constexpr static big_int<size> log(
     const big_int<size>& base,
+    const big_int<size>& number) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> log2(
+    const big_int<size>& number) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> log10(
+    const big_int<size>& number) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> loglp(
+    const big_int<size>& number) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> exp(
+    const big_int<size>& number) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> exp2(
+    const big_int<size>& number) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> pow(
+    const big_int<size>& base,
+    const big_int<size>& power) noexcept;
+
+template <size_t size>
+[[nodiscard]] constexpr static big_int<size> expml(
     const big_int<size>& number) noexcept;
 
 template <size_t size>
@@ -803,4 +857,13 @@ template <size_t size>
     {
         return num;
     }
+}
+
+#include <ostream>
+
+template <size_t size>
+[[nodiscard]] static std::ostream& operator<<(std::ostream& os,
+                                              const big_int<size>& a)
+{
+    return os << to_string(a);
 }

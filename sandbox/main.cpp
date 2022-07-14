@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <stdexcept>
 #include <string_view>
 
@@ -6,6 +7,7 @@
 #include <numeric>
 
 #include "big_int.hpp"
+
 struct Foo
 {
     int num;
@@ -70,6 +72,9 @@ int main()
         static_assert(std::clamp(three, one, two) == 2);
 
         // static_assert(123_bi == 123);
+
+        static_assert(std::max(3_bi, 4_bi) == 4_bi);
+        static_assert(std::min(-3_bi, 4_bi) == -3_bi);
     }
 
     {  // valid runtime
@@ -90,12 +95,12 @@ int main()
             big_int<test_max_size>::max();
 
         big_int<test_max_size> increment;
-        increment.increment();
-        increment.increment();
+        ++increment;
+        ++increment;
         assert(increment == two);
 
         big_int<test_max_size> overflow = big_int<test_max_size>::max();
-        overflow.increment();
+        ++overflow;
         assert(overflow == minimal);
 
         assert(minimal < maximal);
@@ -108,16 +113,15 @@ int main()
         assert(-three < -two);
 
         big_int<test_max_size> underflow = big_int<test_max_size>::min();
-        underflow.decrement();
+        --underflow;
         assert(underflow == maximal);
 
         big_int<test_max_size> decremented = 0;
-        decremented.decrement();
+        --decremented;
         assert(decremented == minusOne);
 
         big_int<test_max_size> negated = -1;
-        negated.negate();
-        assert(negated == 1);  // test out the auto conversion
+        assert(-negated == 1);  // test out the auto conversion
 
         big_int<test_max_size> absoluted = -1;
         absoluted.abs();
@@ -172,7 +176,7 @@ int main()
         {  // custom literal testing
             big_int<128> correct = 123;
             big_int<128> correct_neg = -123;
-            //big_int avogadro = 602'214'076'000'000'000'000'000_bi;
+            // big_int avogadro = 602'214'076'000'000'000'000'000_bi;
 
             auto one_two_three = 123_bi;
             auto minus_one_two_three = -123_bi;
