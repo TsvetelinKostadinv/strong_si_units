@@ -1,17 +1,14 @@
-#include <algorithm>
 #include <cassert>
-#include <stdexcept>
-#include <string_view>
 
-#include <iostream>
-#include <numeric>
-
-#include "big_int.hpp"
-//#include "big_int64.hpp"
+#include "big_int64.hpp"
 
 struct Foo
 {
     int num;
+};
+
+struct Empty
+{
 };
 
 constexpr size_t test_max_size = 128;
@@ -39,9 +36,9 @@ int main()
         [[maybe_unused]] constexpr big_int<test_max_size> copy = def;
 
         [[maybe_unused]] constexpr big_int<test_max_size> minimal =
-            big_int<test_max_size>::min();
+            std::numeric_limits<big_int<test_max_size>>::min();
         [[maybe_unused]] constexpr big_int<test_max_size> maximal =
-            big_int<test_max_size>::max();
+            std::numeric_limits<big_int<test_max_size>>::max();
 
         static_assert(minimal + maximal == -1);
         static_assert(minimal - maximal == 1);
@@ -74,8 +71,8 @@ int main()
 
         // static_assert(123_bi == 123);
 
-        static_assert(std::max(3_bi, 4_bi) == 4_bi);
-        static_assert(std::min(-3_bi, 4_bi) == -3_bi);
+        // static_assert(std::max(3_bi, 4_bi) == 4_bi);
+        // static_assert(std::min(-3_bi, 4_bi) == -3_bi);
     }
 
     {  // valid runtime
@@ -90,17 +87,17 @@ int main()
         [[maybe_unused]] big_int<test_max_size> copy;
         copy = def;
 
-        [[maybe_unused]] big_int<test_max_size> minimal =
-            big_int<test_max_size>::min();
-        [[maybe_unused]] big_int<test_max_size> maximal =
-            big_int<test_max_size>::max();
+        [[maybe_unused]] const big_int<test_max_size> minimal =
+            std::numeric_limits<big_int<test_max_size>>::min();
+        [[maybe_unused]] const big_int<test_max_size> maximal =
+            std::numeric_limits<big_int<test_max_size>>::max();
 
         big_int<test_max_size> increment;
         ++increment;
         ++increment;
         assert(increment == two);
 
-        big_int<test_max_size> overflow = big_int<test_max_size>::max();
+        big_int<test_max_size> overflow = maximal;
         ++overflow;
         assert(overflow == minimal);
 
@@ -113,7 +110,7 @@ int main()
         assert(-three < two);
         assert(-three < -two);
 
-        big_int<test_max_size> underflow = big_int<test_max_size>::min();
+        big_int<test_max_size> underflow = minimal;
         --underflow;
         assert(underflow == maximal);
 
@@ -139,23 +136,23 @@ int main()
         assert(std::min(big_int<test_max_size>(1), big_int<test_max_size>(0)) ==
                0);
 
-        big_int<test_max_size> five = 3;
-        five += 2;
-        assert(five == 5);
+        // big_int<test_max_size> five = 3;
+        // five += 2;
+        // assert(five == 5);
 
-        big_int<test_max_size> wrap_test_on_plus_eq =
-            big_int<test_max_size>::max();
-        wrap_test_on_plus_eq += 1;
-        assert(wrap_test_on_plus_eq == big_int<test_max_size>::min());
+        // big_int<test_max_size> wrap_test_on_plus_eq =
+        //    big_int<test_max_size>::max();
+        // wrap_test_on_plus_eq += 1;
+        // assert(wrap_test_on_plus_eq == big_int<test_max_size>::min());
 
-        big_int<test_max_size> seven = 10;
-        seven -= 3;
-        assert(seven == 7);
+        // big_int<test_max_size> seven = 10;
+        // seven -= 3;
+        // assert(seven == 7);
 
-        big_int<test_max_size> wrap_test_on_minus_eq =
-            big_int<test_max_size>::min();
-        wrap_test_on_minus_eq -= 1;
-        assert(wrap_test_on_minus_eq == big_int<test_max_size>::max());
+        // big_int<test_max_size> wrap_test_on_minus_eq =
+        //    big_int<test_max_size>::min();
+        // wrap_test_on_minus_eq -= 1;
+        // assert(wrap_test_on_minus_eq == big_int<test_max_size>::max());
 
         // big_int<sizeof(long long)> i_bi = 0;
         // for (long long i = 0; i < 1024; ++i, ++i_bi)
@@ -179,32 +176,32 @@ int main()
             big_int<128> correct_neg = -123;
             // big_int avogadro = 602'214'076'000'000'000'000'000_bi;
 
-            auto one_two_three = 123_bi;
-            auto minus_one_two_three = -123_bi;
+            // auto one_two_three = 123_bi;
+            // auto minus_one_two_three = -123_bi;
 
-            assert(one_two_three == correct);
-            assert(minus_one_two_three == correct_neg);
-            assert(+0_bi == -0_bi);
+            // assert(one_two_three == correct);
+            // assert(minus_one_two_three == correct_neg);
+            // assert(+0_bi == -0_bi);
         }
     }
 
-    {
-        // error constexpr
-        [[maybe_unused]] constexpr Foo f{3};
-        static_assert(!std::is_integral<Foo>::value);
-        //[[maybe_unused]] constexpr big_int<32> err(f);
-        // [[maybe_unused]] constexpr big_int<32> err(3.14);
-        // [[maybe_unused]] constexpr big_int<2> err(2ull);
-        //[[maybe_unused]] constexpr big_int<0> err;
+    //{
+    //    // error constexpr
+    //    [[maybe_unused]] constexpr Foo f{3};
+    //    static_assert(!std::is_integral<Foo>::value);
+    //    //[[maybe_unused]] constexpr big_int<32> err(f);
+    //    // [[maybe_unused]] constexpr big_int<32> err(3.14);
+    //    // [[maybe_unused]] constexpr big_int<2> err(2ull);
+    //    //[[maybe_unused]] constexpr big_int<0> err;
 
-        static_assert(
-            !std::is_constructible<big_int<test_max_size>, Foo>::value);
-    }
+    //    static_assert(
+    //        !std::is_constructible<big_int<test_max_size>, Foo>::value);
+    //}
 
-    {  // error runtime
-       // [[maybe_unused]] big_int<32> err;
-       // err = 3.14;
-    }
+    //{  // error runtime
+    //   // [[maybe_unused]] big_int<32> err;
+    //   // err = 3.14;
+    //}
 
     return 0;
 }
