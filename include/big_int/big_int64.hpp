@@ -102,7 +102,7 @@ struct big_int : wide_words_helper<size>,
         else
         {
             return (raw_least_significant_wide[widest_unsigned_count - 1] >>
-                    (64-8));
+                    (64 - 8));
         }
     }
 
@@ -285,13 +285,13 @@ struct big_int : wide_words_helper<size>,
         if constexpr (contains_padding_bytes)
         {
             curr_idx = 0;
-            do
+            while (carry && curr_idx < padding_u8_count)
             {
                 u8 old_value = raw_most_significant_bytes[curr_idx];
                 ++raw_most_significant_bytes[curr_idx];
                 carry = old_value > raw_most_significant_bytes[curr_idx];
                 ++curr_idx;
-            } while (carry && curr_idx < padding_u8_count);
+            }
 
             // TODO: if the currIdx is padding_u8_count, then there is overlow
             // maybe make the behaviour configurable
@@ -317,13 +317,13 @@ struct big_int : wide_words_helper<size>,
         if constexpr (contains_padding_bytes)
         {
             curr_idx = 0;
-            do
+            while (take && curr_idx < padding_u8_count)
             {
                 u8 old_value = raw_most_significant_bytes[curr_idx];
                 --raw_most_significant_bytes[curr_idx];
-                carry = old_value < raw_most_significant_bytes[curr_idx];
+                take = old_value < raw_most_significant_bytes[curr_idx];
                 ++curr_idx;
-            } while (take && curr_idx < padding_u8_count);
+            }
 
             // TODO: if the curr_idx is padding_u8_count, then there is
             // maybe make the behaviour configurable
@@ -525,7 +525,7 @@ struct big_int : wide_words_helper<size>,
         {
             for (size_t i = 0; i < padding_u8_count; ++i)
             {
-                res.raw_most_significant_bytesm[i] =
+                res.raw_most_significant_bytes[i] =
                     raw_most_significant_bytes[i] +
                     other.raw_most_significant_bytes[i];
                 const bool overflowed_on_sum =
@@ -640,7 +640,7 @@ struct big_int : wide_words_helper<size>,
             return least_significant_nz ||
                    std::any_of(raw_most_significant_bytes.begin(),
                                raw_most_significant_bytes.end(),
-                               [](const u8 byte) { return byte != 0; })
+                               [](const u8 byte) { return byte != 0; });
         }
 
         return least_significant_nz;
@@ -672,7 +672,7 @@ struct big_int : wide_words_helper<size>,
             if constexpr (contains_padding_bytes)
             {
                 constexpr u8 full_mask = ~u8(0);
-                for (size_t i = 1; i < padding_u8_count; ++i)
+                for (size_t i = 0; i < padding_u8_count; ++i)
                 {
                     raw_most_significant_bytes[i] = full_mask;
                 }
