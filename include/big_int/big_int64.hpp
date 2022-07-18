@@ -18,16 +18,17 @@ struct wide_words_helper
         raw_least_significant_wide = {0};
 };
 
+// TODO : get away from the pragma
+#pragma pack(push, 1)
+
 template <size_t size>
-struct most_significant_bytes
+struct wide_words_and_most_significant_bytes : wide_words_helper<size>
 {
     static constexpr size_t padding_u8_count = size % sizeof(widest_unsigned);
 
     std::array<u8, padding_u8_count> raw_most_significant_bytes = {0};
 };
-
-// TODO : get away from the pragma
-#pragma pack(push, 1)
+#pragma pack(pop)
 
 // Integer representation in size number of bytes
 // two's complement
@@ -35,10 +36,9 @@ struct most_significant_bytes
 // Guaranteed to wrap on overlow
 // TODO : template parameter to control the behaviour on overflow
 template <size_t size>
-struct big_int : wide_words_helper<size>,
-                 std::conditional_t<size % sizeof(widest_unsigned) != 0,
-                                    most_significant_bytes<size>,
-                                    void>
+struct big_int : std::conditional_t<size % sizeof(widest_unsigned) != 0,
+                                    wide_words_and_most_significant_bytes<size>,
+                                    wide_words_helper<size>>
 {
     // Stored in order from least significant to most significant
     // The least significant bytes are packaged in the widest words available
@@ -97,12 +97,14 @@ struct big_int : wide_words_helper<size>,
     {
         if constexpr (contains_padding_bytes)
         {
-            return raw_most_significant_bytes[padding_u8_count - 1];
+            return this->raw_most_significant_bytes[this->padding_u8_count - 1];
         }
         else
         {
-            return (raw_least_significant_wide[widest_unsigned_count - 1] >>
-                    (64 - 8));
+            return (
+                this->raw_least_significant_wide[this->widest_unsigned_count -
+                                                 1] >>
+                (64 - 8));
         }
     }
 
@@ -119,9 +121,9 @@ struct big_int : wide_words_helper<size>,
 
     [[nodiscard]] constexpr bool operator==(const big_int& other) const noexcept
     {
-        for (size_t i = 0; i < widest_unsigned_count; ++i)
+        for (size_t i = 0; i < this->widest_unsigned_count; ++i)
         {
-            if (raw_least_significant_wide[i] !=
+            if (this->raw_least_significant_wide[i] !=
                 other.raw_least_significant_wide[i])
             {
                 return false;
@@ -130,9 +132,9 @@ struct big_int : wide_words_helper<size>,
 
         if constexpr (contains_padding_bytes)
         {
-            for (size_t i = 0; i < padding_u8_count; ++i)
+            for (size_t i = 0; i < this->padding_u8_count; ++i)
             {
-                if (raw_most_significant_bytes[i] !=
+                if (this->raw_most_significant_bytes[i] !=
                     other.raw_most_significant_bytes[i])
                 {
                     return false;
@@ -165,25 +167,26 @@ struct big_int : wide_words_helper<size>,
             most_significant_byte_no_sign_other)
         {
             // like memcpy, but in reverse
-            for (size_t i = widest_unsigned_count - 1;
-                 i < widest_unsigned_count; --i)
+            for (size_t i = this->widest_unsigned_count - 1;
+                 i < this->widest_unsigned_count; --i)
             {
-                if (raw_least_significant_wide[i] !=
+                if (this->raw_least_significant_wide[i] !=
                     other.raw_least_significant_wide[i])
                 {
-                    return raw_least_significant_wide[i] <
+                    return this->raw_least_significant_wide[i] <
                            other.raw_least_significant_wide[i];
                 }
             }
 
             if constexpr (contains_padding_bytes)
             {
-                for (size_t i = padding_u8_count - 1; i < padding_u8_count; --i)
+                for (size_t i = this->padding_u8_count - 1;
+                     i < this->padding_u8_count; --i)
                 {
-                    if (raw_most_significant_bytes[i] !=
+                    if (this->raw_most_significant_bytes[i] !=
                         other.raw_most_significant_bytes[i])
                     {
-                        return raw_most_significant_bytes[i] <
+                        return this->raw_most_significant_bytes[i] <
                                other.raw_most_significant_bytes[i];
                     }
                 }
@@ -226,12 +229,12 @@ struct big_int : wide_words_helper<size>,
         constexpr size_t bitsInByte = 8;
         if constexpr (contains_padding_bytes)
         {
-            raw_most_significant_bytes[padding_u8_count - 1] ^=
+            this->raw_most_significant_bytes[this->padding_u8_count - 1] ^=
                 (u8(1) << (bitsInByte * sizeof(u8) - 1));
         }
         else
         {
-            raw_least_significant_wide[widest_unsigned_count - 1] ^=
+            this->raw_least_significant_wide[this->widest_unsigned_count - 1] ^=
                 (u64(1) << (bitsInByte * sizeof(widest_unsigned) - 1));
         }
     }
@@ -239,16 +242,18 @@ struct big_int : wide_words_helper<size>,
     // negates the number in two's complement
     constexpr void negate() noexcept
     {
-        for (size_t i = 0; i < widest_unsigned_count; ++i)
+        for (size_t i = 0; i < this->widest_unsigned_count; ++i)
         {
-            raw_least_significant_wide[i] = ~raw_least_significant_wide[i];
+            this->raw_least_significant_wide[i] =
+                ~this->raw_least_significant_wide[i];
         }
 
         if constexpr (contains_padding_bytes)
         {
-            for (size_t i = 0; i < padding_u8_count; ++i)
+            for (size_t i = 0; i < this->padding_u8_count; ++i)
             {
-                raw_most_significant_bytes[i] = ~raw_most_significant_bytes[i];
+                this->raw_most_significant_bytes[i] =
+                    ~this->raw_most_significant_bytes[i];
             }
         }
 
@@ -273,11 +278,11 @@ struct big_int : wide_words_helper<size>,
         size_t curr_idx = 0;
         do
         {
-            u64 old_value = raw_least_significant_wide[curr_idx];
-            ++raw_least_significant_wide[curr_idx];
-            carry = old_value > raw_least_significant_wide[curr_idx];
+            u64 old_value = this->raw_least_significant_wide[curr_idx];
+            ++this->raw_least_significant_wide[curr_idx];
+            carry = old_value > this->raw_least_significant_wide[curr_idx];
             ++curr_idx;
-        } while (carry && curr_idx < widest_unsigned_count);
+        } while (carry && curr_idx < this->widest_unsigned_count);
 
         // Here if carry is true => we have a carry from the least significant
         // wide to the most significant bytes
@@ -285,16 +290,16 @@ struct big_int : wide_words_helper<size>,
         if constexpr (contains_padding_bytes)
         {
             curr_idx = 0;
-            while (carry && curr_idx < padding_u8_count)
+            while (carry && curr_idx < this->padding_u8_count)
             {
-                u8 old_value = raw_most_significant_bytes[curr_idx];
-                ++raw_most_significant_bytes[curr_idx];
-                carry = old_value > raw_most_significant_bytes[curr_idx];
+                u8 old_value = this->raw_most_significant_bytes[curr_idx];
+                ++this->raw_most_significant_bytes[curr_idx];
+                carry = old_value > this->raw_most_significant_bytes[curr_idx];
                 ++curr_idx;
             }
 
-            // TODO: if the currIdx is padding_u8_count, then there is overlow
-            // maybe make the behaviour configurable
+            // TODO: if the currIdx is this->padding_u8_count, then there is
+            // overlow maybe make the behaviour configurable
         }
     }
 
@@ -305,11 +310,11 @@ struct big_int : wide_words_helper<size>,
         size_t curr_idx = 0;
         do
         {
-            u64 old_value = raw_least_significant_wide[curr_idx];
-            --raw_least_significant_wide[curr_idx];
-            take = old_value < raw_least_significant_wide[curr_idx];
+            u64 old_value = this->raw_least_significant_wide[curr_idx];
+            --this->raw_least_significant_wide[curr_idx];
+            take = old_value < this->raw_least_significant_wide[curr_idx];
             ++curr_idx;
-        } while (take && curr_idx < widest_unsigned_count);
+        } while (take && curr_idx < this->widest_unsigned_count);
 
         // Here if take is true => we have a take from the most significant
         // bytes
@@ -317,15 +322,15 @@ struct big_int : wide_words_helper<size>,
         if constexpr (contains_padding_bytes)
         {
             curr_idx = 0;
-            while (take && curr_idx < padding_u8_count)
+            while (take && curr_idx < this->padding_u8_count)
             {
-                u8 old_value = raw_most_significant_bytes[curr_idx];
-                --raw_most_significant_bytes[curr_idx];
-                take = old_value < raw_most_significant_bytes[curr_idx];
+                u8 old_value = this->raw_most_significant_bytes[curr_idx];
+                --this->raw_most_significant_bytes[curr_idx];
+                take = old_value < this->raw_most_significant_bytes[curr_idx];
                 ++curr_idx;
             }
 
-            // TODO: if the curr_idx is padding_u8_count, then there is
+            // TODO: if the curr_idx is this->padding_u8_count, then there is
             // maybe make the behaviour configurable
         }
     }
@@ -366,22 +371,23 @@ struct big_int : wide_words_helper<size>,
     constexpr void left_shift_once() noexcept
     {
         u8 carry = 0;
-        for (size_t i = 0; i < widest_unsigned_count; ++i)
+        for (size_t i = 0; i < this->widest_unsigned_count; ++i)
         {
-            const u8 msb = most_significant_bit(raw_least_significant_wide[i]);
-            raw_least_significant_wide[i] <<= 1;
-            raw_least_significant_wide[i] |= carry;
+            const u8 msb =
+                most_significant_bit(this->raw_least_significant_wide[i]);
+            this->raw_least_significant_wide[i] <<= 1;
+            this->raw_least_significant_wide[i] |= carry;
             carry = msb;
         }
 
         if constexpr (contains_padding_bytes)
         {
-            for (size_t i = 0; i < padding_u8_count; ++i)
+            for (size_t i = 0; i < this->padding_u8_count; ++i)
             {
                 const u8 msb =
-                    most_significant_bit(raw_most_significant_bytes[i]);
-                raw_most_significant_bytes[i] <<= 1;
-                raw_most_significant_bytes[i] |= carry;
+                    most_significant_bit(this->raw_most_significant_bytes[i]);
+                this->raw_most_significant_bytes[i] <<= 1;
+                this->raw_most_significant_bytes[i] |= carry;
                 carry = msb;
             }
         }
@@ -391,23 +397,25 @@ struct big_int : wide_words_helper<size>,
     {
         u8 carry = 0;
 
-        for (size_t i = widest_unsigned_count - 1; i < widest_unsigned_count;
-             --i)
+        for (size_t i = this->widest_unsigned_count - 1;
+             i < this->widest_unsigned_count; --i)
         {
-            const u8 lsb = least_significant_bit(raw_least_significant_wide[i]);
-            raw_least_significant_wide[i] >>= 1;
-            raw_least_significant_wide[i] |= (carry << 7);
+            const u8 lsb =
+                least_significant_bit(this->raw_least_significant_wide[i]);
+            this->raw_least_significant_wide[i] >>= 1;
+            this->raw_least_significant_wide[i] |= (carry << 7);
             carry = lsb;
         }
 
         if constexpr (contains_padding_bytes)
         {
-            for (size_t i = padding_u8_count - 1; i < padding_u8_count; --i)
+            for (size_t i = this->padding_u8_count - 1;
+                 i < this->padding_u8_count; --i)
             {
                 const u8 lsb =
-                    least_significant_bit(raw_most_significant_bytes[i]);
-                raw_most_significant_bytes[i] >>= 1;
-                raw_most_significant_bytes[i] |= (carry << 7);
+                    least_significant_bit(this->raw_most_significant_bytes[i]);
+                this->raw_most_significant_bytes[i] >>= 1;
+                this->raw_most_significant_bytes[i] |= (carry << 7);
                 carry = lsb;
             }
         }
@@ -437,7 +445,7 @@ struct big_int : wide_words_helper<size>,
     [[nodiscard]] constexpr big_int operator~() const noexcept
     {
         big_int cpy = *this;
-        for (size_t i = 0; i < widest_unsigned_count; ++i)
+        for (size_t i = 0; i < this->widest_unsigned_count; ++i)
         {
             cpy.raw_least_significant_wide[i] =
                 ~cpy.raw_least_significant_wide[i];
@@ -445,7 +453,7 @@ struct big_int : wide_words_helper<size>,
 
         if constexpr (contains_padding_bytes)
         {
-            for (size_t i = 0; i < padding_u8_count; ++i)
+            for (size_t i = 0; i < this->padding_u8_count; ++i)
             {
                 cpy.raw_most_significant_bytes[i] =
                     ~cpy.raw_most_significant_bytes[i];
@@ -497,14 +505,14 @@ struct big_int : wide_words_helper<size>,
     {
         big_int res;
         bool carry = false;
-        for (size_t i = 0; i < widest_unsigned_count; ++i)
+        for (size_t i = 0; i < this->widest_unsigned_count; ++i)
         {
             res.raw_least_significant_wide[i] =
-                raw_least_significant_wide[i] +
+                this->raw_least_significant_wide[i] +
                 other.raw_least_significant_wide[i];
             const bool overflowed_on_sum =
                 res.raw_least_significant_wide[i] <
-                    raw_least_significant_wide[i] ||
+                    this->raw_least_significant_wide[i] ||
                 res.raw_least_significant_wide[i] <
                     other.raw_least_significant_wide[i];
 
@@ -523,14 +531,14 @@ struct big_int : wide_words_helper<size>,
 
         if constexpr (contains_padding_bytes)
         {
-            for (size_t i = 0; i < padding_u8_count; ++i)
+            for (size_t i = 0; i < this->padding_u8_count; ++i)
             {
                 res.raw_most_significant_bytes[i] =
-                    raw_most_significant_bytes[i] +
+                    this->raw_most_significant_bytes[i] +
                     other.raw_most_significant_bytes[i];
                 const bool overflowed_on_sum =
                     res.raw_most_significant_bytes[i] <
-                        raw_most_significant_bytes[i] ||
+                        this->raw_most_significant_bytes[i] ||
                     res.raw_most_significant_bytes[i] <
                         other.raw_most_significant_bytes[i];
 
@@ -563,7 +571,7 @@ struct big_int : wide_words_helper<size>,
         const big_int& other) const noexcept
     {
         big_int res = *this;
-        for (size_t i = 0; i < widest_unsigned_count; ++i)
+        for (size_t i = 0; i < this->widest_unsigned_count; ++i)
         {
             res.raw_least_significant_wide[i] &=
                 other.raw_least_significant_wide[i];
@@ -571,7 +579,7 @@ struct big_int : wide_words_helper<size>,
 
         if constexpr (contains_padding_bytes)
         {
-            for (size_t i = 0; i < paddin_u8_bytes; ++i)
+            for (size_t i = 0; i < this->paddin_u8_bytes; ++i)
             {
                 res.raw_most_significant_bytes[i] &=
                     other.raw_most_significant_bytes[i];
@@ -585,7 +593,7 @@ struct big_int : wide_words_helper<size>,
         const big_int& other) const noexcept
     {
         big_int res = *this;
-        for (size_t i = 0; i < widest_unsigned_count; ++i)
+        for (size_t i = 0; i < this->widest_unsigned_count; ++i)
         {
             res.raw_least_significant_wide[i] |=
                 other.raw_least_significant_wide[i];
@@ -593,7 +601,7 @@ struct big_int : wide_words_helper<size>,
 
         if constexpr (contains_padding_bytes)
         {
-            for (size_t i = 0; i < paddin_u8_bytes; ++i)
+            for (size_t i = 0; i < this->paddin_u8_bytes; ++i)
             {
                 res.raw_most_significant_bytes[i] |=
                     other.raw_most_significant_bytes[i];
@@ -607,7 +615,7 @@ struct big_int : wide_words_helper<size>,
         const big_int& other) const noexcept
     {
         big_int res = *this;
-        for (size_t i = 0; i < widest_unsigned_count; ++i)
+        for (size_t i = 0; i < this->widest_unsigned_count; ++i)
         {
             res.raw_least_significant_wide[i] ^=
                 other.raw_least_significant_wide[i];
@@ -615,7 +623,7 @@ struct big_int : wide_words_helper<size>,
 
         if constexpr (contains_padding_bytes)
         {
-            for (size_t i = 0; i < paddin_u8_bytes; ++i)
+            for (size_t i = 0; i < this->paddin_u8_bytes; ++i)
             {
                 res.raw_most_significant_bytes[i] ^=
                     other.raw_most_significant_bytes[i];
@@ -631,15 +639,15 @@ struct big_int : wide_words_helper<size>,
     [[nodiscard]] explicit operator bool() const noexcept
     {
         const bool least_significant_nz =
-            std::any_of(raw_least_significant_wide.begin(),
-                        raw_least_significant_wide.end(),
+            std::any_of(this->raw_least_significant_wide.begin(),
+                        this->raw_least_significant_wide.end(),
                         [](const u64 byte) { return byte != 0; });
 
         if constexpr (contains_padding_bytes)
         {
             return least_significant_nz ||
-                   std::any_of(raw_most_significant_bytes.begin(),
-                               raw_most_significant_bytes.end(),
+                   std::any_of(this->raw_most_significant_bytes.begin(),
+                               this->raw_most_significant_bytes.end(),
                                [](const u8 byte) { return byte != 0; });
         }
 
@@ -658,23 +666,23 @@ struct big_int : wide_words_helper<size>,
                       "The size of the big int must be greater than the size "
                       "of the source type");
         // T is integral and for sure is less than u64
-        raw_least_significant_wide[0] = a;
+        this->raw_least_significant_wide[0] = a;
         const bool should_fill_with_sign_bit = a < 0;
         constexpr u64 full_mask64 = ~u64(0);
 
         if (should_fill_with_sign_bit)
         {
-            for (size_t i = 1; i < widest_unsigned_count; ++i)
+            for (size_t i = 1; i < this->widest_unsigned_count; ++i)
             {
-                raw_least_significant_wide[i] = full_mask64;
+                this->raw_least_significant_wide[i] = full_mask64;
             }
 
             if constexpr (contains_padding_bytes)
             {
                 constexpr u8 full_mask = ~u8(0);
-                for (size_t i = 0; i < padding_u8_count; ++i)
+                for (size_t i = 0; i < this->padding_u8_count; ++i)
                 {
-                    raw_most_significant_bytes[i] = full_mask;
+                    this->raw_most_significant_bytes[i] = full_mask;
                 }
             }
         }
@@ -682,26 +690,26 @@ struct big_int : wide_words_helper<size>,
 
 #pragma endregion
 };
-#pragma pack(pop)
 
-static_assert(std::is_trivially_copyable_v<big_int<128>>);
+static_assert(std::is_trivially_copyable<big_int<128>>::value);
 
-static_assert(std::is_literal_type_v<big_int<128>>);
+// static_assert(std::is_literal_type<big_int<128>>::value);
+
 // TODO : fix assertion without the pragma
-static_assert(std::has_unique_object_representations_v<big_int<128>>);
-static_assert(std::has_unique_object_representations_v<big_int<129>>);
-static_assert(std::has_unique_object_representations_v<big_int<130>>);
+static_assert(std::has_unique_object_representations<big_int<128>>::value);
+static_assert(std::has_unique_object_representations<big_int<129>>::value);
+static_assert(std::has_unique_object_representations<big_int<130>>::value);
 static_assert(sizeof(big_int<128>) == 128);
 static_assert(sizeof(big_int<129>) == 129);
 static_assert(sizeof(big_int<130>) == 130);
 
-static_assert(std::is_move_constructible_v<big_int<128>>);
-static_assert(std::is_trivially_move_constructible_v<big_int<128>>);
-static_assert(std::is_nothrow_move_constructible_v<big_int<128>>);
+static_assert(std::is_move_constructible<big_int<128>>::value);
+static_assert(std::is_trivially_move_constructible<big_int<128>>::value);
+static_assert(std::is_nothrow_move_constructible<big_int<128>>::value);
 
 // Assuring common_type can be specialized for the big_int
-static_assert(std::is_same_v<std::decay_t<big_int<128>>, big_int<128>>);
-static_assert(std::is_same_v<std::decay_t<big_int<129>>, big_int<129>>);
+static_assert(std::is_same<std::decay_t<big_int<128>>, big_int<128>>::value);
+static_assert(std::is_same<std::decay_t<big_int<129>>, big_int<129>>::value);
 template <size_t sz_a, size_t sz_b>
 struct std::common_type<big_int<sz_a>, big_int<sz_b>>
 {
@@ -710,56 +718,56 @@ struct std::common_type<big_int<sz_a>, big_int<sz_b>>
 
 #include <limits>
 
-template <size_t size>
-class std::numeric_limits<big_int<size>>
+template <size_t bi_size>
+class std::numeric_limits<big_int<bi_size>>
 {
 public:
-    [[nodiscard]] static constexpr big_int<size>(min)() noexcept
+    [[nodiscard]] static constexpr big_int<bi_size>(min)() noexcept
     {
-        big_int<size> tmp;
+        big_int<bi_size> tmp;
         tmp.flipSignBit();
         return tmp;
         // return cached_min;
     }
 
-    [[nodiscard]] static constexpr big_int<size>(max)() noexcept
+    [[nodiscard]] static constexpr big_int<bi_size>(max)() noexcept
     {
         return cached_max;
     }
 
-    [[nodiscard]] static constexpr big_int<size> lowest() noexcept
+    [[nodiscard]] static constexpr big_int<bi_size> lowest() noexcept
     {
         return cached_min;
     }
 
-    [[nodiscard]] static constexpr big_int<size> epsilon() noexcept
+    [[nodiscard]] static constexpr big_int<bi_size> epsilon() noexcept
     {
-        return big_int<size>();
+        return big_int<bi_size>();
     }
 
-    [[nodiscard]] static constexpr big_int<size> round_error() noexcept
+    [[nodiscard]] static constexpr big_int<bi_size> round_error() noexcept
     {
-        return big_int<size>();
+        return big_int<bi_size>();
     }
 
-    [[nodiscard]] static constexpr big_int<size> denorm_min() noexcept
+    [[nodiscard]] static constexpr big_int<bi_size> denorm_min() noexcept
     {
-        return big_int<size>();
+        return big_int<bi_size>();
     }
 
-    [[nodiscard]] static constexpr big_int<size> infinity() noexcept
+    [[nodiscard]] static constexpr big_int<bi_size> infinity() noexcept
     {
-        return big_int<size>();
+        return big_int<bi_size>();
     }
 
-    [[nodiscard]] static constexpr big_int<size> quiet_NaN() noexcept
+    [[nodiscard]] static constexpr big_int<bi_size> quiet_NaN() noexcept
     {
-        return big_int<size>();
+        return big_int<bi_size>();
     }
 
-    [[nodiscard]] static constexpr big_int<size> signaling_NaN() noexcept
+    [[nodiscard]] static constexpr big_int<bi_size> signaling_NaN() noexcept
     {
-        return big_int<size>();
+        return big_int<bi_size>();
     }
 
     static constexpr bool is_specialized = true;
@@ -776,7 +784,7 @@ public:
     static constexpr bool is_bounded = true;
     // the big_int wraps around on overflow
     static constexpr bool is_modulo = true;
-    static constexpr int digits = size;
+    static constexpr int digits = int(bi_size);
     // static constexpr int digits10 = ?;
     // static constexpr int max_digits10 = ?;
 
@@ -792,16 +800,16 @@ public:
     static constexpr bool tinyness_before = false;
 
 private:
-    static constexpr big_int<size> cached_min = []() noexcept
+    static constexpr big_int<bi_size> cached_min = []() noexcept
     {
-        big_int<size> tmp;
+        big_int<bi_size> tmp;
         tmp.flipSignBit();
         return tmp;
     }();
 
-    static constexpr big_int<size> cached_max = []() noexcept
+    static constexpr big_int<bi_size> cached_max = []() noexcept
     {
-        big_int<size> tmp;
+        big_int<bi_size> tmp;
         tmp.flipSignBit();
         return ~tmp;
     }();

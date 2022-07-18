@@ -185,8 +185,8 @@ void cosntexpr_and_runtime_test()
         //}
 
         {  // custom literal testing
-            big_int<128> correct = 123;
-            big_int<128> correct_neg = -123;
+            [[maybe_unused]] big_int<128> correct = 123;
+            [[maybe_unused]] big_int<128> correct_neg = -123;
             // big_int avogadro = 602'214'076'000'000'000'000'000_bi;
 
             // auto one_two_three = 123_bi;
