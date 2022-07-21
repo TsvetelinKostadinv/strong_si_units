@@ -15,20 +15,26 @@ constexpr static bool constexpr_is_digit(char ch) noexcept
 
 constexpr static u8 most_significant_bit(u8 byte) noexcept
 {
-    return byte >> 7;
+    return u8(byte >> 7);
 }
 
 constexpr static u8 most_significant_bit(u64 wide) noexcept
 {
-    return (wide >> 24) >> 7;
+    return u8((wide >> 24) >> 7);
 }
 
 constexpr static u8 least_significant_bit(u8 byte) noexcept
 {
-    return byte & 1;
+    return u8(byte & 1);
 }
 
 constexpr static u8 least_significant_bit(u64 wide) noexcept
 {
-    return wide & 1;
+    return u8(wide & 1);
 }
+
+#if __has_cpp_attribute(nodiscard)
+#define BIG_INT_NODISCARD [[nodiscard]]
+#else
+#define BIG_INT_NODISCARD
+#endif  // __has_cpp_attribute(nodiscard)

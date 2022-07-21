@@ -43,6 +43,11 @@ else()
   message(SEND_ERROR "The compile flags are set only for MSVC")
 endif()
 
+if(MSVC)
+  set(CONSTEXPR_OP_LIMIT /constexpr:steps10000000)
+endif()
+  
+set(PROJECT_SETTINGS ${MSVC_WARNINGS} ${CONSTEXPR_OP_LIMIT})
 
 if(ENABLE_CLANG_TIDY)
   find_program(CLANGTIDY clang-tidy)
@@ -60,10 +65,10 @@ endif()
 # target_compile_options(SI_units INTERFACE ${PROJECT_WARNINGS})
 
 add_subdirectory(sandbox)
-add_compile_options(sandbox INTERFACE ${PROJECT_WARNINGS})
+target_compile_options(sandbox PRIVATE ${PROJECT_SETTINGS})
 
 if(ENABLE_TESTING)
   enable_testing()
   add_subdirectory(test)
-  add_compile_options(test INTERFACE ${PROJECT_WARNINGS})
+  add_compile_options(test INTERFACE ${PROJECT_SETTINGS})
 endif()

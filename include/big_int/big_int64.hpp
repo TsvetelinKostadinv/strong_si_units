@@ -224,7 +224,7 @@ struct big_int : std::conditional_t<size % sizeof(widest_unsigned) != 0,
 #pragma region modifying_ops
 #pragma region unary
 
-    constexpr void flipSignBit() noexcept
+    constexpr void flip_sign_bit() noexcept
     {
         constexpr size_t bitsInByte = 8;
         if constexpr (contains_padding_bytes)
@@ -725,7 +725,7 @@ public:
     [[nodiscard]] static constexpr big_int<bi_size>(min)() noexcept
     {
         big_int<bi_size> tmp;
-        tmp.flipSignBit();
+        tmp.flip_sign_bit();
         return tmp;
         // return cached_min;
     }
@@ -803,14 +803,14 @@ private:
     static constexpr big_int<bi_size> cached_min = []() noexcept
     {
         big_int<bi_size> tmp;
-        tmp.flipSignBit();
+        tmp.flip_sign_bit();
         return tmp;
     }();
 
     static constexpr big_int<bi_size> cached_max = []() noexcept
     {
         big_int<bi_size> tmp;
-        tmp.flipSignBit();
+        tmp.flip_sign_bit();
         return ~tmp;
     }();
 };

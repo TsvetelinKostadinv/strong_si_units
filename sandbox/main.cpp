@@ -1,6 +1,8 @@
+#include <algorithm>
 #include <cassert>
 
-#include "big_int64.hpp"
+//#include "big_int64.hpp"
+#include "big_int.hpp"
 
 struct Foo
 {
@@ -12,25 +14,29 @@ struct Empty
 };
 
 template <size_t test_size>
-void cosntexpr_and_runtime_test();
+void constexpr_and_runtime_test();
 
-int main() {
-    cosntexpr_and_runtime_test<64>();
-    cosntexpr_and_runtime_test<65>();
-    cosntexpr_and_runtime_test<66>();
-    cosntexpr_and_runtime_test<67>();
+int main()
+{
+    constexpr_and_runtime_test<64>();
+    //constexpr_and_runtime_test<65>();
+    // cosntexpr_and_runtime_test<66>();
+    // cosntexpr_and_runtime_test<67>();
 
-    cosntexpr_and_runtime_test<128>();
-    cosntexpr_and_runtime_test<129>();
-    cosntexpr_and_runtime_test<130>();
-    cosntexpr_and_runtime_test<131>();
+    //constexpr_and_runtime_test<128>();
+    //constexpr_and_runtime_test<129>();
+    // cosntexpr_and_runtime_test<130>();
+    // cosntexpr_and_runtime_test<131>();
+
+    return 0;
 }
 
 template <size_t test_size>
-void cosntexpr_and_runtime_test()
+void constexpr_and_runtime_test()
 {
     {  // valid constexpr
-        [[maybe_unused]] constexpr big_int<test_size> def;
+        [[maybe_unused]] constexpr big_int<test_size> def =
+            big_int<test_size>();
         static_assert(sizeof(def) == test_size);
 
         [[maybe_unused]] constexpr big_int<test_size> eqInt = 3;
@@ -65,28 +71,29 @@ void cosntexpr_and_runtime_test()
         constexpr big_int<test_size> two = 2;
         constexpr big_int<test_size> three = 3;
 
-        // static_assert(minimal < maximal);
-        // static_assert(!(maximal < maximal));
-        // static_assert(!(maximal < minimal));
-        // static_assert(two < maximal);
-        // static_assert(two < three);
-        // static_assert(-two < three);
-        // static_assert(-three < two);
-        // static_assert(-three < -two);
+        static_assert(minimal < maximal);
+        static_assert(!(maximal < maximal));
+        static_assert(!(maximal < minimal));
+        static_assert(two < maximal);
+        static_assert(two < three);
+        static_assert(-two < three);
+        static_assert(-three < two);
+        static_assert(-three < -two);
 
-        // static_assert((one << 3) == (1 << 3));
-        // static_assert((one >> 0) == (1 >> 0));
-        // static_assert((one >> 3) == (1 >> 3));
+        static_assert((one << 3) == (1 << 3));
+        static_assert((one >> 0) == (1 >> 0));
+        static_assert((one >> 3) == (1 >> 3));
 
+        // TODO : make std::gcd work
         // constexpr auto gcd = std::gcd(two, two * three);
 
         // static_assert(gcd == 2);
         static_assert(std::clamp(three, one, two) == 2);
 
-        // static_assert(123_bi == 123);
+        static_assert(123_bi == 123);
 
-        // static_assert(std::max(3_bi, 4_bi) == 4_bi);
-        // static_assert(std::min(-3_bi, 4_bi) == -3_bi);
+        static_assert(std::max(3_bi, 4_bi) == 4_bi);
+        static_assert(std::min(-3_bi, 4_bi) == -3_bi);
     }
 
     {  // valid runtime
@@ -149,52 +156,54 @@ void cosntexpr_and_runtime_test()
         assert(bool(big_int<test_size>(1)));
         assert(std::min(big_int<test_size>(1), big_int<test_size>(0)) == 0);
 
-        // big_int<test_max_size> five = 3;
-        // five += 2;
-        // assert(five == 5);
+        big_int<test_size> five = 3;
+        five += 2;
+        assert(five == 5);
 
-        // big_int<test_max_size> wrap_test_on_plus_eq =
-        //    big_int<test_max_size>::max();
-        // wrap_test_on_plus_eq += 1;
-        // assert(wrap_test_on_plus_eq == big_int<test_max_size>::min());
+        big_int<test_size> wrap_test_on_plus_eq =
+            std::numeric_limits<big_int<test_size>>::max();
+        wrap_test_on_plus_eq += 1;
+        assert(wrap_test_on_plus_eq ==
+               std::numeric_limits<big_int<test_size>>::min());
 
-        // big_int<test_max_size> seven = 10;
-        // seven -= 3;
-        // assert(seven == 7);
+        big_int<test_size> seven = 10;
+        seven -= 3;
+        assert(seven == 7);
 
-        // big_int<test_max_size> wrap_test_on_minus_eq =
-        //    big_int<test_max_size>::min();
-        // wrap_test_on_minus_eq -= 1;
-        // assert(wrap_test_on_minus_eq == big_int<test_max_size>::max());
+        big_int<test_size> wrap_test_on_minus_eq =
+            std::numeric_limits<big_int<test_size>>::min();
+        wrap_test_on_minus_eq -= 1;
+        assert(wrap_test_on_minus_eq ==
+               std::numeric_limits<big_int<test_size>>::max());
 
-        // big_int<sizeof(long long)> i_bi = 0;
-        // for (long long i = 0; i < 1024; ++i, ++i_bi)
-        //{
-        //    big_int<sizeof(long long)> j_bi = long long(0);
-        //    for (long long j = 0; j < 1024; ++j, ++j_bi)
-        //    {
-        //        if (i_bi + j_bi != long long(i + j))
-        //        {
-        //            printf("Different!");
-        //        }
-        //        if (i_bi * j_bi != long long(i * j))
-        //        {
-        //            printf("Different mult!");
-        //        }
-        //    }
-        //}
+        big_int<sizeof(long long)> i_bi = 0;
+        for (long long i = 0; i < 1024; ++i, ++i_bi)
+        {
+            big_int<sizeof(long long)> j_bi = 0;
+            for (long long j = 0; j < 1024; ++j, ++j_bi)
+            {
+                if (i_bi + j_bi != (long long) i + j)
+                {
+                    printf("Different addition!");
+                }
+                if (i_bi * j_bi != (long long) i + j)
+                {
+                    printf("Different mult!");
+                }
+            }
+        }
 
         {  // custom literal testing
             [[maybe_unused]] big_int<128> correct = 123;
             [[maybe_unused]] big_int<128> correct_neg = -123;
-            // big_int avogadro = 602'214'076'000'000'000'000'000_bi;
+            //constexpr auto avogadro = 602'214'076'000'000'000'000'000_bi;
 
-            // auto one_two_three = 123_bi;
-            // auto minus_one_two_three = -123_bi;
+            auto one_two_three = 123_bi;
+            auto minus_one_two_three = -123_bi;
 
-            // assert(one_two_three == correct);
-            // assert(minus_one_two_three == correct_neg);
-            // assert(+0_bi == -0_bi);
+            assert(one_two_three == correct);
+            assert(minus_one_two_three == correct_neg);
+            assert(+0_bi == -0_bi);
         }
     }
 
@@ -208,7 +217,7 @@ void cosntexpr_and_runtime_test()
     //    //[[maybe_unused]] constexpr big_int<0> err;
 
     //    static_assert(
-    //        !std::is_constructible<big_int<test_max_size>, Foo>::value);
+    //        !std::is_constructible<big_int<test_size>, Foo>::value);
     //}
 
     //{  // error runtime
