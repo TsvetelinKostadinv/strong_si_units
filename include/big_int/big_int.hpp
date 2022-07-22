@@ -481,44 +481,6 @@ struct big_int
         return big_int<size>(u8(1));
     }
 
-    // TODO : disallow consecutive separator chars - '
-    // TODO : parse binary, octal and hex numbers
-    template <size_t arrSz>
-    BIG_INT_NODISCARD constexpr static big_int from_fixed_char_array(
-        const std::array<char, arrSz>& arr) /*noexcept*/
-    {
-        static_assert(arrSz > 1, "Cannot have zero length integers!");
-
-        const big_int base = 10;
-        big_int res = 0;
-
-        const bool should_negate = arr[0] == '-';
-        const bool should_skip_first = should_negate || (arr[0] == '+');
-
-        for (size_t i = should_skip_first ? 1 : 0; i < arrSz && arr[i] != '\0';
-             ++i)
-        {
-            if (arr[i] == '\'')
-            {
-                continue;
-            }
-
-            if (!constexpr_is_digit(arr[i]))
-            {
-                throw std::invalid_argument("Illegal character in number!");
-            }
-
-            res *= base;
-            res += arr[i] - '0';
-        }
-
-        if (should_negate)
-        {
-            res.negate();
-        }
-        return res;
-    }
-
     // stored in order from least significant to most significant
     // 0 -> least significant
     // size - 1 -> most significant
@@ -687,25 +649,62 @@ private:
 #pragma endregion
 };
 
+namespace detail
+{
 // TODO : user defined literals
 template <char... c>
 struct size_to_fit : std::integral_constant<size_t, 128>
 {
 };
 
-template <char... c>
-constexpr big_int<size_to_fit<c...>::value> operator""_bi() noexcept
+// TODO : disallow consecutive separator chars - '
+// TODO : parse binary, octal and hex numbers
+template <size_t arrSz, size_t bi_size>
+BIG_INT_NODISCARD static constexpr big_int<bi_size> from_fixed_char_array(
+    const std::array<char, arrSz>& arr) /*noexcept*/
 {
-    constexpr std::array<char, sizeof...(c) + 1> str = {c...};
+    static_assert(arrSz >= 1, "Cannot have zero length integers!");
 
-    return big_int<size_to_fit<c...>::value>::template from_fixed_char_array(
-        str);
+    constexpr big_int<bi_size> base = 10;
+    big_int<bi_size> res = 0;
+
+    const bool should_negate = arr[0] == '-';
+    const bool should_skip_first = should_negate || (arr[0] == '+');
+
+    for (size_t i = should_skip_first ? 1 : 0; i < arrSz; ++i)
+    {
+        if (arr[i] == '\'')
+        {
+            continue;
+        }
+
+        if (!constexpr_is_digit(arr[i]))
+        {
+            throw std::invalid_argument("Illegal character in number!");
+        }
+
+        res *= base;
+        res += arr[i] - '0';
+    }
+
+    if (should_negate)
+    {
+        res.negate();
+    }
+    return res;
 }
 
-// constexpr auto avogardo_number = 602'214'076'000'000'000'000'000_bi;
-// constexpr auto speed_of_light = 299'792'458_bi;
-// constexpr auto hyperfine_transition_freq_cs = 9'192'631'770_bi;
-// constexpr auto monochromatic_radiation_freq_candela = 540'000'000'000'000_bi;
+}  // namespace detail
+
+template <char... c>
+constexpr static big_int<detail::size_to_fit<c...>::value>
+operator""_bi() noexcept
+{
+    constexpr auto str = std::array{c...};
+
+    return detail::from_fixed_char_array<sizeof...(c),
+                                         detail::size_to_fit<c...>::value>(str);
+}
 
 static_assert(std::is_nothrow_constructible<big_int<128>>::value);
 static_assert(std::is_default_constructible<big_int<128>>::value);
@@ -719,6 +718,9 @@ static_assert(std::is_move_constructible<big_int<128>>::value);
 static_assert(std::is_trivially_move_constructible<big_int<128>>::value);
 static_assert(std::is_nothrow_move_constructible<big_int<128>>::value);
 
+// TODO : Abstract this to a type with a list of sizes and a list of approved
+// types. This could be curated in order for big_int<2> to not accept bigger
+// than short, while big_int<128> would accept all the integral types
 static_assert(std::is_assignable<big_int<128>, char>::value);
 static_assert(std::is_assignable<big_int<128>, unsigned char>::value);
 static_assert(std::is_assignable<big_int<128>, short>::value);
@@ -763,10 +765,6 @@ static_assert(std::has_unique_object_representations<big_int<130>>::value);
 
 static_assert(std::is_standard_layout<big_int<128>>::value);
 
-// static_assert(std::is_assignable_v<big_int<128>,>);
-// static_assert(std::is_trivially_assignable_v<big_int<128>>);
-// static_assert(std::is_nothrow_assignable_v<big_int<128>>);
-
 // Assuring common_type can be specialized for the big_int
 static_assert(std::is_same<std::decay_t<big_int<128>>, big_int<128>>::value);
 static_assert(std::is_same<std::decay_t<big_int<129>>, big_int<129>>::value);
@@ -775,9 +773,6 @@ struct std::common_type<big_int<sz_a>, big_int<sz_b>>
 {
     using type = big_int<std::max(sz_a, sz_b)>;
 };
-
-//#include <numeric>
-#include <string>
 
 template <size_t size>
 BIG_INT_NODISCARD constexpr static big_int<size> gcd(
@@ -834,23 +829,15 @@ BIG_INT_NODISCARD constexpr static big_int<size> expml(
     const big_int<size>& number) noexcept;
 
 template <size_t size>
-BIG_INT_NODISCARD constexpr static std::string to_string(
+BIG_INT_NODISCARD constexpr static big_int<size> rotl(
     const big_int<size>& num) noexcept;
 
 template <size_t size>
-BIG_INT_NODISCARD constexpr static big_int<size> from_string(
-    const std::string& str) noexcept;
-
-template <size_t size>
-BIG_INT_NODISCARD constexpr static std::string rotl(
+BIG_INT_NODISCARD constexpr static big_int<size> rotr(
     const big_int<size>& num) noexcept;
 
 template <size_t size>
-BIG_INT_NODISCARD constexpr static std::string rotr(
-    const big_int<size>& num) noexcept;
-
-template <size_t size>
-BIG_INT_NODISCARD constexpr static std::string popcnt(
+BIG_INT_NODISCARD constexpr static size_t popcnt(
     const big_int<size>& num) noexcept;
 
 template <size_t size>
@@ -893,6 +880,43 @@ BIG_INT_NODISCARD static constexpr const big_int<size>& fact(
 template <size_t size>
 BIG_INT_NODISCARD static constexpr const big_int<size>& fib(
     const big_int<size>& num) noexcept;
+
+#include <string>
+
+template <size_t size>
+BIG_INT_NODISCARD static std::string to_string(
+    const big_int<size>& num) noexcept;
+
+template <size_t size>
+BIG_INT_NODISCARD static big_int<size> from_string(
+    const std::string& str) noexcept;
+
+#include <charconv>
+
+template <size_t bi_size>
+std::to_chars_result to_chars(char* first,
+                              char* last,
+                              const big_int<bi_size>& value,
+                              int base = 10);
+
+template <size_t bi_size>
+std::to_chars_result to_chars(char* first,
+                              char* last,
+                              const big_int<bi_size>& value,
+                              std::chars_format fmt);
+
+template <size_t bi_size>
+std::from_chars_result from_chars(const char* first,
+                                  const char* last,
+                                  big_int<bi_size>& value,
+                                  int base = 10);
+
+template <size_t bi_size>
+std::from_chars_result from_chars(
+    const char* first,
+    const char* last,
+    big_int<bi_size>& value,
+    std::chars_format fmt = std::chars_format::general);
 
 #include <ostream>
 

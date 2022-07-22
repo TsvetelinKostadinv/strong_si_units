@@ -33,8 +33,29 @@ constexpr static u8 least_significant_bit(u64 wide) noexcept
     return u8(wide & 1);
 }
 
+#include <utility>
+#include <version>
+
 #if __has_cpp_attribute(nodiscard)
 #define BIG_INT_NODISCARD [[nodiscard]]
 #else
 #define BIG_INT_NODISCARD
 #endif  // __has_cpp_attribute(nodiscard)
+
+#if __has_cpp_attribute(maybe_unused)
+#define BIG_INT_UNUSED [[maybe_unused]]
+#else
+#define BIG_INT_UNUSED
+#endif
+
+#if __cpp_lib_unreachable
+#define BIG_INT_UNREACHABLE \
+    {                       \
+        assert(false);      \
+        std::unreachable(); \
+    }
+#else
+#define BIG_INT_UNREACHABLE \
+    {                       \
+    }
+#endif
