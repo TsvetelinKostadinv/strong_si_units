@@ -700,10 +700,9 @@ template <char... c>
 constexpr static big_int<detail::size_to_fit<c...>::value>
 operator""_bi() noexcept
 {
-    constexpr auto str = std::array{c...};
-
     return detail::from_fixed_char_array<sizeof...(c),
-                                         detail::size_to_fit<c...>::value>(str);
+                                         detail::size_to_fit<c...>::value>(
+        std::array{c...});
 }
 
 static_assert(std::is_nothrow_constructible<big_int<128>>::value);
