@@ -21,4 +21,4 @@ jobs:
       - name: CMake generate build files
         run: cmake . -DDEFINE_SI_CONSTANTS=1 -DENABLE_SANDBOX=1
       - name: CMake build
-        run: cmake --build .
+        run: cmake --build .  --verbose

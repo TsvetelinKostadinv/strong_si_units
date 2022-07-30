@@ -2,12 +2,14 @@ cmake_minimum_required(VERSION 3.15)
 
 project(SI_units CXX)
 
+# Options
 option(ENABLE_SANDBOX "Should the sandbox project be included" ON)
 option(ENABLE_TESTS "Should the test project be included" OFF)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 option(ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 option(ENABLE_SI_CONSTANTS "The library provides big_int definitions for the SI constants" OFF)
 
+# Warnings
 set(MSVC_WARNINGS
   /W4 # Baseline reasonable warnings
   /w14242 # 'identifier': conversion from 'type1' to 'type1', possible loss of data
