@@ -1,0 +1,24 @@
+name: GCC Build x64
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  GCC-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Setup GCC
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: latest
+          platform: x64
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+      - name: Check out repository code
+        uses: actions/checkout@v2
+        # with:
+          # submodules: true
+      - name: CMake generate build files
+        run: cmake . -DDEFINE_SI_CONSTANTS=1 -DENABLE_SANDBOX=1
+      - name: CMake build
+        run: cmake --build .
