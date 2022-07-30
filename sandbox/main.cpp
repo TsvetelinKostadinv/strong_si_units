@@ -187,11 +187,11 @@ void constexpr_and_runtime_test()
             big_int<sizeof(long long)> j_bi = 0;
             for (long long j = 0; j < 1024; ++j, ++j_bi)
             {
-                if (i_bi + j_bi != (long long) i + j)
+                if (i_bi + j_bi != i + j)
                 {
                     printf("Different addition!");
                 }
-                if (i_bi * j_bi != (long long) i + j)
+                if (i_bi * j_bi != i * j)
                 {
                     printf("Different mult!");
                 }
