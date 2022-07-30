@@ -890,20 +890,20 @@ template <size_t size>
 BIG_INT_NODISCARD static big_int<size> from_string(
     const std::string& str) noexcept;
 
-#include <charconv>
-
-template <size_t bi_size>
-std::to_chars_result to_chars(char* first,
-                              char* last,
-                              const big_int<bi_size>& value,
-                              int base = 10);
-
-template <size_t bi_size>
-std::to_chars_result to_chars(char* first,
-                              char* last,
-                              const big_int<bi_size>& value,
-                              std::chars_format fmt);
-
+//#include <charconv>
+//
+//template <size_t bi_size>
+//std::to_chars_result to_chars(char* first,
+//                              char* last,
+//                              const big_int<bi_size>& value,
+//                              int base = 10);
+//
+//template <size_t bi_size>
+//std::to_chars_result to_chars(char* first,
+//                              char* last,
+//                              const big_int<bi_size>& value,
+//                              std::chars_format fmt);
+//
 //template <size_t bi_size>
 //std::from_chars_result from_chars(const char* first,
 //                                  const char* last,
