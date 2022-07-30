@@ -77,7 +77,7 @@ if(MSVC)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
   list(APPEND CLANG_WARNINGS -fconstexpr-steps=${MAX_CONSTEXPR_STEPS})
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  list(APPEND GCC_WARNINGS -fconstexpr-steps=${MAX_CONSTEXPR_STEPS})
+  list(APPEND GCC_WARNINGS -constexpr-ops-limit=${MAX_CONSTEXPR_STEPS})
 else()
   message(AUTHOR_WARNING "No compiler warnings set for CXX compiler: '${CMAKE_CXX_COMPILER_ID}'")
   # TODO support Intel compiler
