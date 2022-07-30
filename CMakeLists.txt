@@ -51,6 +51,7 @@ set(CLANG_WARNINGS
   -Wdouble-promotion # warn if float is implicit promoted to double
   -Wformat=2 # warn on security issues around functions that format output (ie printf)
   -Wimplicit-fallthrough # warn on statements that fallthrough without an explicit annotation
+  -Wunknown-pragmas
 )
 
 set(GCC_WARNINGS
