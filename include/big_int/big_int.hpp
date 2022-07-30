@@ -904,18 +904,18 @@ std::to_chars_result to_chars(char* first,
                               const big_int<bi_size>& value,
                               std::chars_format fmt);
 
-template <size_t bi_size>
-std::from_chars_result from_chars(const char* first,
-                                  const char* last,
-                                  big_int<bi_size>& value,
-                                  int base = 10);
-
-template <size_t bi_size>
-std::from_chars_result from_chars(
-    const char* first,
-    const char* last,
-    big_int<bi_size>& value,
-    std::chars_format fmt = std::chars_format::general);
+//template <size_t bi_size>
+//std::from_chars_result from_chars(const char* first,
+//                                  const char* last,
+//                                  big_int<bi_size>& value,
+//                                  int base = 10);
+//
+//template <size_t bi_size>
+//std::from_chars_result from_chars(
+//    const char* first,
+//    const char* last,
+//    big_int<bi_size>& value,
+//    std::chars_format fmt = std::chars_format::general);
 
 #include <ostream>
 
