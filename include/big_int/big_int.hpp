@@ -205,12 +205,13 @@ struct big_int
         for (size_t i = 0; i < size; ++i)
         {
             const u8 old = raw[i];
-            raw[i] += u8(other.raw[i]);
+            raw[i] = u8(raw[i] + other.raw[i]);
             const bool overflowed_on_sum = raw[i] < old;
 
             const u8 summed = raw[i];
-            raw[i] += u8(carry);  // separate expression to prevent overflow on
-                                  // operands in the first incrementation
+            // separate expression to prevent
+            // overflow on operands in the first incrementation
+            raw[i] += u8(raw[i] + carry);
 
             const bool overflowed_on_carry = raw[i] < summed;
             // assert(overflowed_on_carry != overflowed_on_sum ||
@@ -610,8 +611,8 @@ private:
         for (size_t i = 0; i < size; ++i)
         {
             const u8 msb = most_significant_bit(raw[i]);
-            raw[i] <<= 1;
-            raw[i] |= carry;
+            raw[i] = u8(raw[i] << 1);
+            raw[i] = u8(raw[i] | carry);
             carry = msb;
         }
     }
@@ -623,8 +624,8 @@ private:
         for (size_t i = size - 1; i < size; --i)
         {
             const u8 lsb = least_significant_bit(raw[i]);
-            raw[i] >>= 1;
-            raw[i] |= (carry << 7);
+            raw[i] = u8(raw[i] >> 1);
+            raw[i] = u8(raw[i] | (carry << 7));
             carry = lsb;
         }
     }
