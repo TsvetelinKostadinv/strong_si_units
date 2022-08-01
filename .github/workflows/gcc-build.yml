@@ -16,8 +16,8 @@ jobs:
         uses: lukka/get-cmake@latest
       - name: Check out repository code
         uses: actions/checkout@v2
-        # with:
-          # submodules: true
+        with:
+          submodules: true
       - name: CMake generate build files
         run: >
           cmake 
