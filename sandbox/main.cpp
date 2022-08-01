@@ -3,6 +3,7 @@
 
 //#include "big_int64.hpp"
 #include "big_int.hpp"
+#include "big_int_std_integration.hpp"
 
 struct Foo
 {
