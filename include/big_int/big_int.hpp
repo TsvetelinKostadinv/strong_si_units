@@ -6,6 +6,9 @@
 #include <stdexcept>
 #include <type_traits>
 
+// TODO : check for performance implications when substituting += (and others)
+// with expanded form
+
 // enum class cmp_result
 //{
 //    EQ,
@@ -211,7 +214,7 @@ struct big_int
             const u8 summed = raw[i];
             // separate expression to prevent
             // overflow on operands in the first incrementation
-            raw[i] += u8(raw[i] + carry);
+            raw[i] = u8(raw[i] + carry);
 
             const bool overflowed_on_carry = raw[i] < summed;
             // assert(overflowed_on_carry != overflowed_on_sum ||
