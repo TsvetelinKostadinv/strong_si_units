@@ -29,12 +29,13 @@ jobs:
           -DENABLE_BIG_INT_STD_INTEGRATION=1
           -DENABLE_BIG_INT_UTIL=1
           -DENABLE_BIG_INT_LITERAL=1
-      - name: CMake build
+      - name: CMake build regular targets
         run: cmake --build .  --verbose
+      - name: CMake build test target
+        run: cmake --build . --target ALL_TESTS
       - name: Run unit tests
         run: >
           ctest 
           -C Debug
           --output-on-failure
-          --build-target ALL_TESTS
           --schedule-random
