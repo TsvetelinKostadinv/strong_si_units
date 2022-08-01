@@ -205,12 +205,12 @@ struct big_int
         for (size_t i = 0; i < size; ++i)
         {
             const u8 old = raw[i];
-            raw[i] += other.raw[i];
+            raw[i] += u8(other.raw[i]);
             const bool overflowed_on_sum = raw[i] < old;
 
             const u8 summed = raw[i];
-            raw[i] += carry;  // separate expression to prevent overflow on
-                              // operands in the first incrementation
+            raw[i] += u8(carry);  // separate expression to prevent overflow on
+                                  // operands in the first incrementation
 
             const bool overflowed_on_carry = raw[i] < summed;
             // assert(overflowed_on_carry != overflowed_on_sum ||
@@ -892,26 +892,26 @@ BIG_INT_NODISCARD static big_int<size> from_string(
 
 //#include <charconv>
 //
-//template <size_t bi_size>
-//std::to_chars_result to_chars(char* first,
+// template <size_t bi_size>
+// std::to_chars_result to_chars(char* first,
 //                              char* last,
 //                              const big_int<bi_size>& value,
 //                              int base = 10);
 //
-//template <size_t bi_size>
-//std::to_chars_result to_chars(char* first,
+// template <size_t bi_size>
+// std::to_chars_result to_chars(char* first,
 //                              char* last,
 //                              const big_int<bi_size>& value,
 //                              std::chars_format fmt);
 //
-//template <size_t bi_size>
-//std::from_chars_result from_chars(const char* first,
+// template <size_t bi_size>
+// std::from_chars_result from_chars(const char* first,
 //                                  const char* last,
 //                                  big_int<bi_size>& value,
 //                                  int base = 10);
 //
-//template <size_t bi_size>
-//std::from_chars_result from_chars(
+// template <size_t bi_size>
+// std::from_chars_result from_chars(
 //    const char* first,
 //    const char* last,
 //    big_int<bi_size>& value,
