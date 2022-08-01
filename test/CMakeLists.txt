@@ -12,7 +12,7 @@ set(COMMON_HEADERS
 set(RUNTIME_TEST_SOURCES
   test.cpp
 )
-add_executable(runtime_tests ${RUNTIMRUNTIME_TEST_SOURCESE_SOURCES} ${COMMON_HEADERS})
+add_executable(runtime_tests ${RUNTIME_TEST_SOURCES} ${COMMON_HEADERS})
 target_link_libraries(runtime_tests PRIVATE Catch2::Catch2WithMain)
 
 catch_discover_tests(runtime_tests)
@@ -31,3 +31,15 @@ target_link_libraries(relaxed_constexpr_tests PRIVATE Catch2::Catch2WithMain)
 add_compile_definitions(CATCH_CONFIG_RUNTIME_STATIC_REQUIRE)
 
 catch_discover_tests(relaxed_constexpr_tests)
+
+add_custom_target(ALL_TESTS COMMAND ${CMAKE_CTEST_COMMAND})
+add_dependencies(ALL_TESTS runtime_tests constexpr_tests relaxed_constexpr_tests)
+
+set_target_properties(
+  runtime_tests
+  constexpr_tests
+  relaxed_constexpr_tests
+  ALL_TESTS
+  PROPERTIES 
+  FOLDER "Tests"
+)

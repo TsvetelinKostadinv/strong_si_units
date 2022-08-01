@@ -142,5 +142,7 @@ if(ENABLE_TESTING)
   enable_testing()
 
   add_subdirectory(test)
-  add_compile_options(tests PRIVATE ${PROJECT_WARNINGS_CXX})
+  add_compile_options(runtime_tests PRIVATE ${PROJECT_WARNINGS_CXX})
+  add_compile_options(constexpr_tests PRIVATE ${PROJECT_WARNINGS_CXX})
+  add_compile_options(relaxed_constexpr_tests PRIVATE ${PROJECT_WARNINGS_CXX})
 endif()
