@@ -36,6 +36,5 @@ jobs:
           ctest 
           -C Debug
           --output-on-failure
-          --build-nocmake 
           --build-target ALL_TESTS
           --schedule-random
