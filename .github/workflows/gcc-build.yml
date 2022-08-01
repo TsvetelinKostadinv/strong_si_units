@@ -30,9 +30,9 @@ jobs:
           -DENABLE_BIG_INT_UTIL=1
           -DENABLE_BIG_INT_LITERAL=1
       - name: CMake build regular targets
-        run: cmake --build .  --verbose
+        run: cmake --build . --verbose
       - name: CMake build test target
-        run: cmake --build . --target ALL_TESTS
+        run: cmake --build . --verbose --target ALL_TESTS
       - name: Run unit tests
         run: >
           ctest 
