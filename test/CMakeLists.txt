@@ -33,13 +33,25 @@ add_compile_definitions(CATCH_CONFIG_RUNTIME_STATIC_REQUIRE)
 catch_discover_tests(relaxed_constexpr_tests)
 
 add_custom_target(ALL_TESTS COMMAND ${CMAKE_CTEST_COMMAND})
-add_dependencies(ALL_TESTS runtime_tests constexpr_tests relaxed_constexpr_tests)
+add_dependencies(
+  ALL_TESTS
+  runtime_tests
+  constexpr_tests
+  relaxed_constexpr_tests
+  Catch2::Catch2WithMain
+  Catch2::Catch2
+)
+
+
 
 set_target_properties(
   runtime_tests
   constexpr_tests
   relaxed_constexpr_tests
   ALL_TESTS
+  Catch2WithMain
+  Catch2
   PROPERTIES 
   FOLDER "Tests"
+  EXCLUDE_FROM_ALL TRUE
 )
