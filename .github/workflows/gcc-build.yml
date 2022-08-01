@@ -31,5 +31,11 @@ jobs:
           -DENABLE_BIG_INT_LITERAL=1
       - name: CMake build
         run: cmake --build .  --verbose
-      # - name: Run unit tests
-      #   uses: HorstBaerbel/action-ctest@1.1
+      - name: Run unit tests
+        run: >
+          ctest 
+          -C Debug
+          --output-on-failure
+          --build-nocmake 
+          --build-target ALL_TESTS
+          --schedule-random
