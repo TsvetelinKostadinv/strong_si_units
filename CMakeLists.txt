@@ -141,9 +141,6 @@ if(ENABLE_TESTING)
   add_subdirectory(lib/catch2)
   enable_testing()
 
-  include(CTest)
-  include(Catch)
-
   add_subdirectory(test)
   add_compile_options(tests PRIVATE ${PROJECT_WARNINGS_CXX})
 endif()
