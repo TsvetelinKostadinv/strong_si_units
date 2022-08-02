@@ -9,28 +9,71 @@
 // TODO : check for performance implications when substituting += (and others)
 // with expanded form
 
-// enum class cmp_result
-//{
-//    EQ,
-//    LT,
-//    GT,
-//};
-//
-// template <size_t cnt, size_t offset>
-// constexpr cmp_result constexpr_memcmp(const std::array<u8, cnt>& buf1,
-//                                      const std::array<u8, cnt>& buf2)
-//{
-//    static_assert(offset < cnt, "Offset out of bounds!");
-//
-//    for (size_t i = offset; i < cnt; ++i)
-//    {
-//        if (buf1[i] != buf2[i])
-//        {
-//            return buf1[i] < buf2[i] ? cmp_result::GT : cmp_result::LT;
-//        }
-//    }
-//    return cmp_result::EQ;
-//}
+namespace detail
+{
+template <typename T>
+constexpr static std::array<u8, sizeof(T)> bytesOf(const T value) noexcept
+{
+    static_assert(std::is_integral<T>::value, "The type has to be integral!");
+    constexpr size_t bytesCnt = sizeof(T);
+
+    constexpr u8 byteMask = u8(~0);
+    constexpr size_t bitsInByte = 8;
+    constexpr T typeMask = T(byteMask);
+
+    std::array<u8, bytesCnt> res{};
+
+    for (size_t i = 0; i < sizeof(T); ++i)
+    {
+        res[i] =
+            u8((value & (typeMask << (i * bitsInByte))) >> (i * bitsInByte));
+    }
+    return res;
+}
+
+template <size_t arrSz>
+constexpr static bool is_rest_all_zeroes(const std::array<u8, arrSz>& arr,
+                                         size_t idx) noexcept
+{
+    // assert(idx < arrSz && "Cannot check ouside of array!");
+    for (size_t i = idx; i < arrSz; ++i)
+    {
+        if (arr[i] != 0)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <size_t size, size_t srcCnt>
+constexpr static void sign_extend_into(
+    std::array<u8, size>& raw,
+    const std::array<u8, srcCnt>& src) noexcept
+{
+    static_assert(size >= srcCnt,
+                  "The resulting count has to be greater than(or equal) the "
+                  "destination count!");
+
+    constexpr u8 fillMask = 0b11111111;
+    constexpr u8 emptyMask = 0b00000000;
+
+    size_t currIdx = 0;
+
+    while (!is_rest_all_zeroes<srcCnt>(src, currIdx) && currIdx < srcCnt)
+    {
+        raw[currIdx] = src[currIdx];
+        ++currIdx;
+    }
+
+    const bool sign = most_significant_bit(src[srcCnt - 1]) != 0;
+
+    for (size_t i = currIdx; i < size; ++i)
+    {
+        raw[i] = sign ? fillMask : emptyMask;
+    }
+}
+}  // namespace detail
 
 // Integer representation in size number of bytes
 // two's complement
@@ -492,72 +535,6 @@ struct big_int
 
 private:
 #pragma region initialization_from_arithmetic
-
-    template <typename T>
-    constexpr static std::array<u8, sizeof(T)> bytesOf(const T value) noexcept
-    {
-        static_assert(std::is_integral<T>::value,
-                      "The type has to be integral!");
-        constexpr size_t bytesCnt = sizeof(T);
-
-        constexpr u8 byteMask = 0b11111111;
-        constexpr size_t bitsInByte = 8;
-        constexpr T typeMask = T(byteMask);
-
-        std::array<u8, bytesCnt> res{};
-
-        for (size_t i = 0; i < sizeof(T); ++i)
-        {
-            res[i] = u8((value & (typeMask << (i * bitsInByte))) >>
-                        (i * bitsInByte));
-        }
-        return res;
-    }
-
-    template <size_t arrSz>
-    constexpr static bool is_rest_all_zeroes(const std::array<u8, arrSz>& arr,
-                                             size_t idx) noexcept
-    {
-        // assert(idx < arrSz && "Cannot check ouside of array!");
-        for (size_t i = idx; i < arrSz; ++i)
-        {
-            if (arr[i] != 0)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    template <size_t srcCnt>
-    constexpr static void sign_extend_into(
-        std::array<u8, size>& raw,
-        const std::array<u8, srcCnt>& src) noexcept
-    {
-        static_assert(
-            size >= srcCnt,
-            "The resulting count has to be greater than(or equal) the "
-            "destination count!");
-
-        constexpr u8 fillMask = 0b11111111;
-        constexpr u8 emptyMask = 0b00000000;
-
-        size_t currIdx = 0;
-
-        while (!is_rest_all_zeroes<srcCnt>(src, currIdx) && currIdx < srcCnt)
-        {
-            raw[currIdx] = src[currIdx];
-            ++currIdx;
-        }
-
-        const bool sign = most_significant_bit(src[srcCnt - 1]) != 0;
-
-        for (size_t i = currIdx; i < size; ++i)
-        {
-            raw[i] = sign ? fillMask : emptyMask;
-        }
-    }
-
     template <typename T>
     constexpr void big_int_init(T a) noexcept
     {
@@ -567,7 +544,7 @@ private:
                       "The size of the big int must be greater than the size "
                       "of the source type");
 
-        sign_extend_into(raw, bytesOf<T>(a));
+        detail::sign_extend_into(raw, detail::bytesOf<T>(a));
     }
 #pragma endregion
 
