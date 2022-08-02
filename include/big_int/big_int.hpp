@@ -58,17 +58,17 @@ constexpr static void sign_extend_into(
     constexpr u8 fillMask = 0b11111111;
     constexpr u8 emptyMask = 0b00000000;
 
-    size_t currIdx = 0;
+    size_t curr_idx = 0;
 
-    while (!is_rest_all_zeroes<srcCnt>(src, currIdx) && currIdx < srcCnt)
+    while (!is_rest_all_zeroes<srcCnt>(src, curr_idx) && curr_idx < srcCnt)
     {
-        raw[currIdx] = src[currIdx];
-        ++currIdx;
+        raw[curr_idx] = src[curr_idx];
+        ++curr_idx;
     }
 
     const bool sign = most_significant_bit(src[srcCnt - 1]) != 0;
 
-    for (size_t i = currIdx; i < size; ++i)
+    for (size_t i = curr_idx; i < size; ++i)
     {
         raw[i] = sign ? fillMask : emptyMask;
     }
@@ -534,7 +534,6 @@ struct big_int
     std::array<u8, size> raw = {0};
 
 private:
-#pragma region initialization_from_arithmetic
     template <typename T>
     constexpr void big_int_init(T a) noexcept
     {
@@ -546,23 +545,22 @@ private:
 
         detail::sign_extend_into(raw, detail::bytesOf<T>(a));
     }
-#pragma endregion
 
 #pragma region arithmetic_helpers
     // Increments the number by one
     constexpr void increment() noexcept
     {
         bool carry = false;
-        size_t currIdx = 0;
+        size_t curr_idx = 0;
         do
         {
-            u8 oldValue = raw[currIdx];
-            ++raw[currIdx];
-            carry = oldValue > raw[currIdx];
-            ++currIdx;
-        } while (carry && currIdx < size);
+            u8 oldValue = raw[curr_idx];
+            ++raw[curr_idx];
+            carry = oldValue > raw[curr_idx];
+            ++curr_idx;
+        } while (carry && curr_idx < size);
 
-        // TODO: if the currIdx is size, then there is overlow
+        // TODO: if the curr_idx is size, then there is overlow
         // maybe make it configurable so it throws
     }
 
@@ -570,16 +568,16 @@ private:
     constexpr void decrement() noexcept
     {
         bool take = false;
-        size_t currIdx = 0;
+        size_t curr_idx = 0;
         do
         {
-            u8 oldValue = raw[currIdx];
-            --raw[currIdx];
-            take = oldValue < raw[currIdx];
-            ++currIdx;
-        } while (take && currIdx < size);
+            u8 oldValue = raw[curr_idx];
+            --raw[curr_idx];
+            take = oldValue < raw[curr_idx];
+            ++curr_idx;
+        } while (take && curr_idx < size);
 
-        // TODO: if the currIdx is size, then there is underflow
+        // TODO: if the curr_idx is size, then there is underflow
         // maybe make it configurable so it throws
     }
 #pragma endregion
