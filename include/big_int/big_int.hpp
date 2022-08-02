@@ -12,31 +12,31 @@
 namespace detail
 {
 template <typename T>
-constexpr static std::array<u8, sizeof(T)> bytesOf(const T value) noexcept
+constexpr static std::array<u8, sizeof(T)> bytes_of(const T value) noexcept
 {
     static_assert(std::is_integral<T>::value, "The type has to be integral!");
-    constexpr size_t bytesCnt = sizeof(T);
+    constexpr size_t bytes_cnt = sizeof(T);
 
-    constexpr u8 byteMask = u8(~0);
-    constexpr size_t bitsInByte = 8;
-    constexpr T typeMask = T(byteMask);
+    constexpr u8 byte_mask = u8(~0);
+    constexpr size_t bits_in_byte = 8;
+    constexpr T type_mask = T(byte_mask);
 
-    std::array<u8, bytesCnt> res{};
+    std::array<u8, bytes_cnt> res{};
 
     for (size_t i = 0; i < sizeof(T); ++i)
     {
-        res[i] =
-            u8((value & (typeMask << (i * bitsInByte))) >> (i * bitsInByte));
+        res[i] = u8((value & (type_mask << (i * bits_in_byte))) >>
+                    (i * bits_in_byte));
     }
     return res;
 }
 
-template <size_t arrSz>
-constexpr static bool is_rest_all_zeroes(const std::array<u8, arrSz>& arr,
+template <size_t arr_sz>
+constexpr static bool is_rest_all_zeroes(const std::array<u8, arr_sz>& arr,
                                          size_t idx) noexcept
 {
-    // assert(idx < arrSz && "Cannot check ouside of array!");
-    for (size_t i = idx; i < arrSz; ++i)
+    // assert(idx < arr_sz && "Cannot check ouside of array!");
+    for (size_t i = idx; i < arr_sz; ++i)
     {
         if (arr[i] != 0)
         {
@@ -46,31 +46,31 @@ constexpr static bool is_rest_all_zeroes(const std::array<u8, arrSz>& arr,
     return true;
 }
 
-template <size_t size, size_t srcCnt>
+template <size_t size, size_t src_cnt>
 constexpr static void sign_extend_into(
     std::array<u8, size>& raw,
-    const std::array<u8, srcCnt>& src) noexcept
+    const std::array<u8, src_cnt>& src) noexcept
 {
-    static_assert(size >= srcCnt,
+    static_assert(size >= src_cnt,
                   "The resulting count has to be greater than(or equal) the "
                   "destination count!");
 
-    constexpr u8 fillMask = 0b11111111;
-    constexpr u8 emptyMask = 0b00000000;
+    constexpr u8 full_mask = 0b11111111;
+    constexpr u8 empty_mask = 0b00000000;
 
     size_t curr_idx = 0;
 
-    while (!is_rest_all_zeroes<srcCnt>(src, curr_idx) && curr_idx < srcCnt)
+    while (!is_rest_all_zeroes<src_cnt>(src, curr_idx) && curr_idx < src_cnt)
     {
         raw[curr_idx] = src[curr_idx];
         ++curr_idx;
     }
 
-    const bool sign = most_significant_bit(src[srcCnt - 1]) != 0;
+    const bool sign = most_significant_bit(src[src_cnt - 1]) != 0;
 
     for (size_t i = curr_idx; i < size; ++i)
     {
-        raw[i] = sign ? fillMask : emptyMask;
+        raw[i] = sign ? full_mask : empty_mask;
     }
 }
 }  // namespace detail
@@ -199,8 +199,8 @@ struct big_int
 
     constexpr void flip_sign_bit() noexcept
     {
-        constexpr size_t bitsInByte = 8;
-        raw[size - 1] ^= (1U << (bitsInByte * sizeof(u8) - 1));
+        constexpr size_t bits_in_byte = 8;
+        raw[size - 1] ^= (1U << (bits_in_byte * sizeof(u8) - 1));
     }
 
     // negates the number in two's complement
@@ -498,7 +498,7 @@ struct big_int
     }
 
     // Conversions
-    BIG_INT_NODISCARD explicit operator bool() const noexcept
+    BIG_INT_NODISCARD constexpr explicit operator bool() const noexcept
     {
         for (const u8 byte : raw)
         {
@@ -510,12 +510,13 @@ struct big_int
         return false;
     }
 
-    template <typename targ>
-    BIG_INT_NODISCARD explicit
-    operator typename std::enable_if<size == sizeof(targ), targ>::type() const
-    {
-        return targ();
-    }
+    // TODO : finish implementation of the conversion to integral
+    //template <typename targ>
+    //BIG_INT_NODISCARD constexpr explicit
+    //operator typename std::enable_if<size == sizeof(targ), targ>::type() const
+    //{
+    //    return targ();
+    //}
 
     // Static factory methods
     BIG_INT_NODISCARD constexpr static big_int zero() noexcept
@@ -543,7 +544,7 @@ private:
                       "The size of the big int must be greater than the size "
                       "of the source type");
 
-        detail::sign_extend_into(raw, detail::bytesOf<T>(a));
+        detail::sign_extend_into(raw, detail::bytes_of<T>(a));
     }
 
 #pragma region arithmetic_helpers
@@ -554,9 +555,9 @@ private:
         size_t curr_idx = 0;
         do
         {
-            u8 oldValue = raw[curr_idx];
+            const u8 old_value = raw[curr_idx];
             ++raw[curr_idx];
-            carry = oldValue > raw[curr_idx];
+            carry = old_value > raw[curr_idx];
             ++curr_idx;
         } while (carry && curr_idx < size);
 
@@ -571,9 +572,9 @@ private:
         size_t curr_idx = 0;
         do
         {
-            u8 oldValue = raw[curr_idx];
+            const u8 old_value = raw[curr_idx];
             --raw[curr_idx];
-            take = oldValue < raw[curr_idx];
+            take = old_value < raw[curr_idx];
             ++curr_idx;
         } while (take && curr_idx < size);
 
@@ -639,11 +640,11 @@ struct size_to_fit : std::integral_constant<size_t, 128>
 
 // TODO : disallow consecutive separator chars - '
 // TODO : parse binary, octal and hex numbers
-template <size_t arrSz, size_t bi_size>
+template <size_t arr_sz, size_t bi_size>
 BIG_INT_NODISCARD static constexpr big_int<bi_size> from_fixed_char_array(
-    const std::array<char, arrSz>& arr) /*noexcept*/
+    const std::array<char, arr_sz>& arr) /*noexcept*/
 {
-    static_assert(arrSz >= 1, "Cannot have zero length integers!");
+    static_assert(arr_sz >= 1, "Cannot have zero length integers!");
 
     constexpr big_int<bi_size> base = 10;
     big_int<bi_size> res = 0;
@@ -651,7 +652,7 @@ BIG_INT_NODISCARD static constexpr big_int<bi_size> from_fixed_char_array(
     const bool should_negate = arr[0] == '-';
     const bool should_skip_first = should_negate || (arr[0] == '+');
 
-    for (size_t i = should_skip_first ? 1 : 0; i < arrSz; ++i)
+    for (size_t i = should_skip_first ? 1 : 0; i < arr_sz; ++i)
     {
         if (arr[i] == '\'')
         {
