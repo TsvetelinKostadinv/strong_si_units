@@ -7,6 +7,7 @@ set(COMMON_HEADERS
   ../include/si_constants.hpp
   ../include/big_int/big_int_std_integration.hpp
   ../include/big_int/big_int_util.hpp
+  test_util.hpp
 )
 
 set(RUNTIME_TEST_SOURCES
@@ -32,6 +33,8 @@ add_compile_definitions(CATCH_CONFIG_RUNTIME_STATIC_REQUIRE)
 
 catch_discover_tests(relaxed_constexpr_tests)
 
+target_include_directories(runtime_tests PRIVATE ../include/big_int)
+
 add_custom_target(ALL_TESTS COMMAND ${CMAKE_CTEST_COMMAND})
 add_dependencies(
   ALL_TESTS
@@ -41,8 +44,6 @@ add_dependencies(
   Catch2::Catch2WithMain
   Catch2::Catch2
 )
-
-
 
 set_target_properties(
   runtime_tests
