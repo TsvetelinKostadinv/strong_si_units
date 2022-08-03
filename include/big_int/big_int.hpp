@@ -17,9 +17,11 @@ constexpr static std::array<u8, sizeof(T)> bytes_of(const T value) noexcept
     static_assert(std::is_integral<T>::value, "The type has to be integral!");
     constexpr size_t bytes_cnt = sizeof(T);
 
+    using unsigned_T = std::make_unsigned<T>::type;
+
     constexpr u8 byte_mask = u8(~0);
     constexpr size_t bits_in_byte = 8;
-    constexpr T type_mask = T(byte_mask);
+    constexpr unsigned_T type_mask = unsigned_T(byte_mask);
 
     std::array<u8, bytes_cnt> res{};
 
@@ -511,9 +513,10 @@ struct big_int
     }
 
     // TODO : finish implementation of the conversion to integral
-    //template <typename targ>
-    //BIG_INT_NODISCARD constexpr explicit
-    //operator typename std::enable_if<size == sizeof(targ), targ>::type() const
+    // template <typename targ>
+    // BIG_INT_NODISCARD constexpr explicit
+    // operator typename std::enable_if<size == sizeof(targ), targ>::type()
+    // const
     //{
     //    return targ();
     //}
