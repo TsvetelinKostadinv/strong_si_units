@@ -17,7 +17,7 @@ constexpr static std::array<u8, sizeof(T)> bytes_of(const T value) noexcept
     static_assert(std::is_integral<T>::value, "The type has to be integral!");
     constexpr size_t bytes_cnt = sizeof(T);
 
-    using unsigned_T = std::make_unsigned<T>::type;
+    using unsigned_T = typename std::make_unsigned<T>::type;
 
     constexpr u8 byte_mask = u8(~0);
     constexpr size_t bits_in_byte = 8;
