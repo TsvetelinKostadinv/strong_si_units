@@ -1,5 +1,10 @@
 name: GCC Build x64
-on: [push, pull_request, workflow_dispatch]
+on: 
+  push:
+    branches: [ main ]
+  push:
+    branches: [ pull_request ]
+  workflow_dispatch
 
 jobs:
   GCC-build:

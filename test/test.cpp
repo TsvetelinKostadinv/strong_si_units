@@ -68,6 +68,7 @@ static void construction_from_integral_test()
     (void) dummy;
 }
 
+#include <type_traits>
 #include <utility>
 
 // https://www.fluentcpp.com/2019/03/05/for_each_arg-applying-a-function-to-each-argument-of-a-function-in-cpp/
@@ -84,7 +85,8 @@ static void construction_from_integral_runner(
 TEST_CASE("Construction from integral", "[ctor]")
 {
     using offsetted_index_sequence_test_sizes =
-        typename offset_index_sequence<8, std::make_index_sequence<128>>::type;
+        typename offset_index_sequence<8,
+                                       std::make_index_sequence<32>>::sequence;
     construction_from_integral_runner<ALL_INTEGRAL>(
         offsetted_index_sequence_test_sizes());
 }

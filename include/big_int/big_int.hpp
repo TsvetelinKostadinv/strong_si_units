@@ -104,8 +104,11 @@ struct big_int
         return *this;
     }
 
+    // TODO : converting constructor from smaller big_ints
+    // TODO : add feature switch for lossy conversions
+
 #pragma region comparison_ops
-    // TODO: compare with smaller big_ints
+    // TODO: compare with big_ints of different size
 
     BIG_INT_NODISCARD constexpr bool operator==(
         const big_int& other) const noexcept
