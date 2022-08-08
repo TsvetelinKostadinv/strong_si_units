@@ -11,70 +11,78 @@
 
 namespace detail
 {
-template <typename T>
-constexpr static std::array<u8, sizeof(T)> bytes_of(const T value) noexcept
+template <typename T,
+          typename = typename std::enable_if<std::is_integral<T>::value>::type>
+constexpr static T abs(T val) noexcept
 {
-    static_assert(std::is_integral<T>::value, "The type has to be integral!");
-    constexpr size_t bytes_cnt = sizeof(T);
-
-    using unsigned_T = typename std::make_unsigned<T>::type;
-
-    constexpr u8 byte_mask = u8(~0);
-    constexpr size_t bits_in_byte = 8;
-    constexpr unsigned_T type_mask = unsigned_T(byte_mask);
-
-    std::array<u8, bytes_cnt> res{};
-
-    for (size_t i = 0; i < sizeof(T); ++i)
-    {
-        res[i] = u8((value & (type_mask << (i * bits_in_byte))) >>
-                    (i * bits_in_byte));
-    }
-    return res;
+    using signed_T = typename std::make_signed<T>::type;
+    return val > 0 ? val : -val;
 }
 
-template <size_t arr_sz>
-constexpr static bool is_rest_all_zeroes(const std::array<u8, arr_sz>& arr,
-                                         size_t idx) noexcept
-{
-    // assert(idx < arr_sz && "Cannot check ouside of array!");
-    for (size_t i = idx; i < arr_sz; ++i)
-    {
-        if (arr[i] != 0)
-        {
-            return false;
-        }
-    }
-    return true;
-}
+// template <typename T>
+// constexpr static std::array<u8, sizeof(T)> bytes_of(const T value) noexcept
+// {
+//     static_assert(std::is_integral<T>::value, "The type has to be integral!");
+//     constexpr size_t bytes_cnt = sizeof(T);
 
-template <size_t size, size_t src_cnt>
-constexpr static void sign_extend_into(
-    std::array<u8, size>& raw,
-    const std::array<u8, src_cnt>& src) noexcept
-{
-    static_assert(size >= src_cnt,
-                  "The resulting count has to be greater than(or equal) the "
-                  "destination count!");
+//     using unsigned_T = typename std::make_unsigned<T>::type;
 
-    constexpr u8 full_mask = 0b11111111;
-    constexpr u8 empty_mask = 0b00000000;
+//     constexpr u8 byte_mask = u8(~0);
+//     constexpr size_t bits_in_byte = 8;
+//     constexpr unsigned_T type_mask = unsigned_T(byte_mask);
 
-    size_t curr_idx = 0;
+//     std::array<u8, bytes_cnt> res{};
 
-    while (!is_rest_all_zeroes<src_cnt>(src, curr_idx) && curr_idx < src_cnt)
-    {
-        raw[curr_idx] = src[curr_idx];
-        ++curr_idx;
-    }
+//     for (size_t i = 0; i < sizeof(T); ++i)
+//     {
+//         res[i] = u8((value & (type_mask << (i * bits_in_byte))) >>
+//                     (i * bits_in_byte));
+//     }
+//     return res;
+// }
 
-    const bool sign = most_significant_bit(src[src_cnt - 1]) != 0;
+// template <size_t arr_sz>
+// constexpr static bool is_rest_all_zeroes(const std::array<u8, arr_sz>& arr,
+//                                          size_t idx) noexcept
+// {
+//     // assert(idx < arr_sz && "Cannot check ouside of array!");
+//     for (size_t i = idx; i < arr_sz; ++i)
+//     {
+//         if (arr[i] != 0)
+//         {
+//             return false;
+//         }
+//     }
+//     return true;
+// }
 
-    for (size_t i = curr_idx; i < size; ++i)
-    {
-        raw[i] = sign ? full_mask : empty_mask;
-    }
-}
+// template <size_t size, size_t src_cnt>
+// constexpr static void sign_extend_into(
+//     std::array<u8, size>& raw,
+//     const std::array<u8, src_cnt>& src) noexcept
+// {
+//     static_assert(size >= src_cnt,
+//                   "The resulting count has to be greater than(or equal) the "
+//                   "destination count!");
+
+//     constexpr u8 full_mask = 0b11111111;
+//     constexpr u8 empty_mask = 0b00000000;
+
+//     size_t curr_idx = 0;
+
+//     while (!is_rest_all_zeroes<src_cnt>(src, curr_idx) && curr_idx < src_cnt)
+//     {
+//         raw[curr_idx] = src[curr_idx];
+//         ++curr_idx;
+//     }
+
+//     const bool sign = most_significant_bit(src[src_cnt - 1]) != 0;
+
+//     for (size_t i = curr_idx; i < size; ++i)
+//     {
+//         raw[i] = sign ? full_mask : empty_mask;
+//     }
+// }
 }  // namespace detail
 
 // Integer representation in size number of bytes
@@ -549,8 +557,43 @@ private:
         static_assert(size >= sizeof(T),
                       "The size of the big int must be greater than the size "
                       "of the source type");
+        // This relies too much on representation
+        // TODO : Detect representation
+        // detail::sign_extend_into(raw, detail::bytes_of<T>(a));
 
-        detail::sign_extend_into(raw, detail::bytes_of<T>(a));
+        const bool should_negate = a < 0;
+        a = detail::abs<T>(a);
+
+        if ((a % 2) == 0)
+        {
+            increment();
+            increment();
+            a -= 2;
+        }
+        else
+        {
+            increment();
+            a -= 1;
+        }
+
+        while (a != 0)
+        {
+            if ((a % 2) == 0)
+            {
+                left_shift_once();
+                a /= 2;
+            }
+            else
+            {
+                increment();
+                --a;
+            }
+        }
+
+        if (should_negate)
+        {
+            negate();
+        }
     }
 
 #pragma region arithmetic_helpers
