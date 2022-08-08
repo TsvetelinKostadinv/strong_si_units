@@ -563,24 +563,24 @@ private:
         const bool should_negate = a < 0;
         a = detail::abs<T>(a);
 
-        if ((a % 2) == 0)
+        if ((a % T(2)) == 0)
         {
             increment();
             increment();
-            a -= 2;
+            a -= T(2);
         }
         else
         {
             increment();
-            a -= 1;
+            a -= T(1);
         }
 
         while (a != 0)
         {
-            if ((a % 2) == 0)
+            if ((a % T(2)) == 0)
             {
                 left_shift_once();
-                a /= 2;
+                a /= T(2);
             }
             else
             {
