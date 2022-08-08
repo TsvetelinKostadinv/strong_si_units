@@ -15,7 +15,6 @@ template <typename T,
           typename = typename std::enable_if<std::is_integral<T>::value>::type>
 constexpr static T abs(T val) noexcept
 {
-    using signed_T = typename std::make_signed<T>::type;
     return val > 0 ? val : -val;
 }
 
