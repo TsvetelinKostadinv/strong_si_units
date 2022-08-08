@@ -21,8 +21,8 @@ constexpr static T abs(T val) noexcept
 // template <typename T>
 // constexpr static std::array<u8, sizeof(T)> bytes_of(const T value) noexcept
 // {
-//     static_assert(std::is_integral<T>::value, "The type has to be integral!");
-//     constexpr size_t bytes_cnt = sizeof(T);
+//     static_assert(std::is_integral<T>::value, "The type has to be
+//     integral!"); constexpr size_t bytes_cnt = sizeof(T);
 
 //     using unsigned_T = typename std::make_unsigned<T>::type;
 
@@ -560,6 +560,11 @@ private:
         // TODO : Detect representation
         // detail::sign_extend_into(raw, detail::bytes_of<T>(a));
 
+        if (a == 0)
+        {
+            return;
+        }
+
         const bool should_negate = a < 0;
         a = detail::abs<T>(a);
 
@@ -567,12 +572,12 @@ private:
         {
             increment();
             increment();
-            a -= T(2);
+            a = T(a - T(2));
         }
         else
         {
             increment();
-            a -= T(1);
+            a = T(a - T(1));
         }
 
         while (a != 0)
@@ -580,7 +585,7 @@ private:
             if ((a % T(2)) == 0)
             {
                 left_shift_once();
-                a /= T(2);
+                a /= T(a / T(2));
             }
             else
             {
