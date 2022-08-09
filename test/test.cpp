@@ -2,6 +2,7 @@
 
 #include "big_int.hpp"
 #include "test_util.hpp"
+#include <utility>
 
 TEST_CASE("sanity check", "[sanity]")
 {
@@ -68,8 +69,6 @@ static void construction_from_integral_test()
     (void) dummy;
 }
 
-#include <type_traits>
-#include <utility>
 
 // https://www.fluentcpp.com/2019/03/05/for_each_arg-applying-a-function-to-each-argument-of-a-function-in-cpp/
 template <typename... integral_types, size_t... test_sizes>

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #define ALL_INTEGRAL                                                       \
     char, signed char, unsigned char, short, signed short, unsigned short, \
         int, signed int, unsigned int, long, signed long, unsigned long,   \

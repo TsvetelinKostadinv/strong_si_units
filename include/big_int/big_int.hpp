@@ -21,7 +21,7 @@ constexpr static T abs(T val) noexcept
     }
     else
     {
-        return val > T(0) ? val : -val;
+        return val > T(0) ? T(val) : T(-val);
     }
 }
 
