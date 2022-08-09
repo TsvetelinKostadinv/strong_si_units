@@ -11,5 +11,6 @@ set(HEADERS
 )
 
 add_executable(sandbox ${SOURCES} ${HEADERS})
+target_link_libraries(sandbox PRIVATE project_warnings project_options)
 
 target_include_directories(sandbox PRIVATE ../include/big_int)

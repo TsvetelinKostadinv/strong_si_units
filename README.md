@@ -2,7 +2,7 @@
 [![GCC Build x64](https://github.com/TsvetelinKostadinv/strong_si_units/actions/workflows/gcc-build.yml/badge.svg)](https://github.com/TsvetelinKostadinv/strong_si_units/actions/workflows/gcc-build.yml)
 
 ### Main goals
-Make a type-safe c++ library with high expressive power when it comes to physics units and the maths associated
+Make a type-safe c++ library with high expressive power when it comes to physics units and the maths associated. Opt-in features and compatibility.
 
 ### Features
 - [ ] Static big integer implementation

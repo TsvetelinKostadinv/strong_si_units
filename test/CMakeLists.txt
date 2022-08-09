@@ -14,6 +14,7 @@ set(RUNTIME_TEST_SOURCES
   test.cpp
 )
 add_executable(runtime_tests ${RUNTIME_TEST_SOURCES} ${COMMON_HEADERS})
+target_link_libraries(runtime_tests PRIVATE project_warnings project_options)
 target_link_libraries(runtime_tests PRIVATE Catch2::Catch2WithMain)
 
 catch_discover_tests(runtime_tests)
@@ -23,11 +24,13 @@ set(CONSTEXPR_TEST_SOURCES
 )
 add_executable(constexpr_tests ${CONSTEXPR_TEST_SOURCES} ${COMMON_HEADERS})
 target_link_libraries(constexpr_tests PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(constexpr_tests PRIVATE project_warnings project_options)
 
 catch_discover_tests(constexpr_tests)
 
 add_executable(relaxed_constexpr_tests ${CONSTEXPR_TEST_SOURCES} ${COMMON_HEADERS})
 target_link_libraries(relaxed_constexpr_tests PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(relaxed_constexpr_tests PRIVATE project_warnings project_options)
 
 add_compile_definitions(CATCH_CONFIG_RUNTIME_STATIC_REQUIRE)
 
@@ -52,7 +55,7 @@ set_target_properties(
   ALL_TESTS
   Catch2WithMain
   Catch2
-  PROPERTIES 
+  PROPERTIES
   FOLDER "Tests"
   EXCLUDE_FROM_ALL TRUE
 )

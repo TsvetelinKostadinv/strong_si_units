@@ -22,7 +22,7 @@ int main()
     //constexpr_and_runtime_test<64>();
     //constexpr_and_runtime_test<65>();
     //constexpr_and_runtime_test<66>();
-    constexpr_and_runtime_test<67>();
+    //constexpr_and_runtime_test<67>();
 
     //constexpr_and_runtime_test<128>();
     //constexpr_and_runtime_test<129>();

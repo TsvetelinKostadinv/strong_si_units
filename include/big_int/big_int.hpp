@@ -15,7 +15,14 @@ template <typename T,
           typename = typename std::enable_if<std::is_integral<T>::value>::type>
 constexpr static T abs(T val) noexcept
 {
-    return val > 0 ? val : -val;
+    if constexpr (std::is_unsigned<T>::value)
+    {
+        return val;
+    }
+    else
+    {
+        return val > 0 ? val : -val;
+    }
 }
 
 // template <typename T>
