@@ -21,7 +21,7 @@ constexpr static T abs(T val) noexcept
     }
     else
     {
-        return val > 0 ? val : -val;
+        return val > T(0) ? val : -val;
     }
 }
 
@@ -658,7 +658,8 @@ private:
 
     constexpr void right_shift_once() noexcept
     {
-        u8 carry = 0;
+        // have to be careful to fill with sign bits
+        u8 carry = is_negative() ? 1 : 0;
 
         for (size_t i = size - 1; i < size; --i)
         {
