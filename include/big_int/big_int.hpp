@@ -592,7 +592,7 @@ private:
             if ((a % T(2)) == 0)
             {
                 left_shift_once();
-                a /= T(a / T(2));
+                a = T(a / T(2));
             }
             else
             {
