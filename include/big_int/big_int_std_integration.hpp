@@ -3,6 +3,7 @@
 #ifdef ENABLE_BIG_INT_STD_INTEGRATION
 
 #include "big_int.hpp"
+#include "util.hpp"
 
 #include <type_traits>
 

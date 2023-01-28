@@ -1,7 +1,10 @@
 #pragma once
 
+#include "big_int/big_int.hpp"
+
 namespace si_constants
 {
+// TODO : need to remove the big integer custom literal
 #ifdef DEFINE_SI_CONSTANTS
 constexpr auto avogardo_number = 602'214'076'000'000'000'000'000_bi;
 constexpr auto speed_of_light = 299'792'458_bi;

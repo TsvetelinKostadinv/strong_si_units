@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
+#include <version>
 
 using u8 = std::uint8_t;
 using i8 = std::int8_t;
@@ -33,9 +35,6 @@ constexpr static u8 least_significant_bit(u64 wide) noexcept
     return u8(wide & 1);
 }
 
-#include <utility>
-#include <version>
-
 #if __has_cpp_attribute(nodiscard)
 #define BIG_INT_NODISCARD [[nodiscard]]
 #else
@@ -50,12 +49,14 @@ constexpr static u8 least_significant_bit(u64 wide) noexcept
 
 #if __cpp_lib_unreachable
 #define BIG_INT_UNREACHABLE \
+    do                      \
     {                       \
         assert(false);      \
         std::unreachable(); \
-    }
+    } while (false);
 #else
 #define BIG_INT_UNREACHABLE \
+    do                      \
     {                       \
-    }
+    } while (false);
 #endif

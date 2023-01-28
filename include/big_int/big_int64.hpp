@@ -1,4 +1,5 @@
 #pragma once
+#error "This file is no longer viable!"
 
 #include "../util.hpp"
 

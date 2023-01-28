@@ -2,12 +2,12 @@ include(CTest)
 include(Catch)
 
 set(COMMON_HEADERS
-  ../include/big_int/big_int.hpp
-  ../include/util.hpp
-  ../include/si_constants.hpp
-  ../include/big_int/big_int_std_integration.hpp
-  ../include/big_int/big_int_util.hpp
-  test_util.hpp
+  # ../include/big_int/big_int.hpp
+  # ../include/util.hpp
+  # ../include/si_constants.hpp
+  # ../include/big_int/big_int_std_integration.hpp
+  # ../include/big_int/big_int_util.hpp
+  # test_util.hpp
 )
 
 set(RUNTIME_TEST_SOURCES
@@ -15,6 +15,7 @@ set(RUNTIME_TEST_SOURCES
 )
 add_executable(runtime_tests ${RUNTIME_TEST_SOURCES} ${COMMON_HEADERS})
 target_link_libraries(runtime_tests PRIVATE project_warnings project_options)
+target_link_libraries(runtime_tests PRIVATE si_lib)
 target_link_libraries(runtime_tests PRIVATE Catch2::Catch2WithMain)
 
 catch_discover_tests(runtime_tests)

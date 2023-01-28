@@ -1,9 +1,10 @@
 name: GCC Build x64
-on: 
+description: Builds and tests the project under latest ubuntu with GCC
+on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -44,3 +45,16 @@ jobs:
           -C Debug
           --output-on-failure
           --schedule-random
+  # no-using-namespace-in-header-files:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: true
+  #   steps:
+  #     - name: Check out repository code
+  #       uses: actions/checkout@v2
+  #       with:
+  #         submodules: false # we don't want to check the submodules for this lint
+  #     - name: Search for `using namespace`
+  #       run: >
+  #         test `grep -rF "using namespace" /include/*.h include/*.hpp | wc -l` 
+  #         -eq 0

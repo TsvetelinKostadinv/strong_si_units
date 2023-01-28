@@ -3,6 +3,7 @@
 #ifdef ENABLE_BIG_INT_UTIL
 
 #include "big_int.hpp"
+#include "util.hpp"
 
 template <size_t size>
 BIG_INT_NODISCARD constexpr static big_int<size> gcd(

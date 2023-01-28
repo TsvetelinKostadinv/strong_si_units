@@ -4,8 +4,37 @@
 //#include "big_int64.hpp"
 #include "big_int.hpp"
 #include "big_int_std_integration.hpp"
+#include "strong_decorators.hpp"
+#include "strong_type.hpp"
 
-struct Foo
+using meter =
+    strong_type<big_int<128>, struct _length_tag, addable, multipliable>;
+using sq_meter = strong_type<big_int<128>, struct _area_tag, addable>;
+
+using second = strong_type<big_int<128>, struct _time_tag, addable>;
+
+template <>
+struct units_multiplied<meter, meter>
+{
+    using type = sq_meter;
+};
+
+// TODO : strong vectors - different spaces - different types
+
+int main()
+{
+    auto len = meter(2);
+    auto time = second(2_bi);
+
+    meter sum_len = len + len;
+    sq_meter area = len * len + len * len;
+    second sum_time = time + time;
+    // len + time; // NOT OK!
+    return 0;
+}
+
+/*
+ struct Foo
 {
     int num;
 };
@@ -19,15 +48,15 @@ void constexpr_and_runtime_test();
 
 int main()
 {
-    //constexpr_and_runtime_test<64>();
-    //constexpr_and_runtime_test<65>();
-    //constexpr_and_runtime_test<66>();
-    //constexpr_and_runtime_test<67>();
+    // constexpr_and_runtime_test<64>();
+    // constexpr_and_runtime_test<65>();
+    // constexpr_and_runtime_test<66>();
+    // constexpr_and_runtime_test<67>();
 
-    //constexpr_and_runtime_test<128>();
-    //constexpr_and_runtime_test<129>();
-    //constexpr_and_runtime_test<130>();
-    //constexpr_and_runtime_test<131>();
+    // constexpr_and_runtime_test<128>();
+    // constexpr_and_runtime_test<129>();
+    // constexpr_and_runtime_test<130>();
+    // constexpr_and_runtime_test<131>();
 
     return 0;
 }
@@ -231,3 +260,4 @@ void constexpr_and_runtime_test()
     //   // err = 3.14;
     //}
 }
+*/
